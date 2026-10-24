@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <!-- WinRT TTS 依赖 Windows，按降级矩阵属 Windows 专属能力 -->
+        <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    </PropertyGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\STranslate.Sdk\STranslate.Sdk.csproj" />
+    </ItemGroup>
+</Project>

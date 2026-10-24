@@ -1,0 +1,75 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <!-- 日常构建用 windows TFM（含微信 OCR 等 Windows 专属扩展）；
+             跨平台编译校验由 CI 用 -p:TargetFrameworks=net10.0 覆盖执行 -->
+        <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+        <DefineConstants Condition="$(TargetFramework.Contains('windows'))">$(DefineConstants);WINDOWS_TFM</DefineConstants>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <!-- LibraryImport 源生成 P/Invoke 需要不安全代码（AOT 友好） -->
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <StartupObject>STranslate.Avalonia.Program</StartupObject>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+        <OutputPath>..\.artifacts\Avalonia\Debug\</OutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+        <OutputPath>..\.artifacts\Avalonia\Release\</OutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia" />
+        <PackageReference Include="Microsoft.Data.Sqlite" />
+        <PackageReference Include="Avalonia.Desktop" />
+        <PackageReference Include="CommunityToolkit.Mvvm" />
+        <PackageReference Include="FluentAvaloniaUI" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+        <PackageReference Include="NAudio" />
+        <PackageReference Include="Velopack" />
+        <PackageReference Include="WebDav.Client" />
+        <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" />
+        <PackageReference Include="ZXing.Net" />
+        <PackageReference Include="ZXing.Net.Bindings.ImageSharp.V3" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <AvaloniaResource Include="..\STranslate\Resources\app.ico" Link="Assets\app.ico" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- 内置官方扩展：新增扩展时在此登记 ProjectReference + ExtensionHost.Registry -->
+        <ProjectReference Include="..\STranslate.Worker.Ipc\STranslate.Worker.Ipc.csproj" />
+        <ProjectReference Include="..\Extensions\STranslate.Extensions.Translate.MTranServer\STranslate.Extensions.Translate.MTranServer.csproj" />
+        <ProjectReference Include="..\Extensions\STranslate.Extensions.Ocr.Google\STranslate.Extensions.Ocr.Google.csproj" />
+        <ProjectReference Include="..\Extensions\STranslate.Extensions.Ocr.WeChatBuiltIn\STranslate.Extensions.Ocr.WeChatBuiltIn.csproj" />
+        <ProjectReference Include="..\Extensions\STranslate.Extensions.Tts.EdgeTts\STranslate.Extensions.Tts.EdgeTts.csproj" />
+        <ProjectReference Include="..\Extensions\STranslate.Extensions.Vocabulary.Eudict\STranslate.Extensions.Vocabulary.Eudict.csproj" />
+        <ProjectReference Include="..\Extensions\STranslate.Extensions.Translate.ICiba\STranslate.Extensions.Translate.ICiba.csproj" />
+        <ProjectReference Include="..\Extensions\STranslate.Extensions.Translate.OpenAI\STranslate.Extensions.Translate.OpenAI.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="..\SolutionAssemblyInfo.cs" Link="Properties\SolutionAssemblyInfo.cs" />
+        <!-- 与 WPF 宿主共享的纯逻辑文件（无 WPF/Win32 依赖），修改前确认两侧都能编译 -->
+        <Compile Include="..\STranslate\Core\AppRuntimeState.cs" Link="Core\AppRuntimeState.cs" />
+        <Compile Include="..\STranslate\Core\AppShutdownReason.cs" Link="Core\AppShutdownReason.cs" />
+        <Compile Include="..\STranslate\Core\BackupSettings.cs" Link="Core\BackupSettings.cs" />
+        <Compile Include="..\STranslate\Core\Constant.cs" Link="Core\Constant.cs" />
+        <Compile Include="..\STranslate\Core\DataLocation.cs" Link="Core\DataLocation.cs" />
+        <Compile Include="..\STranslate\Core\DebounceExecutor.cs" Link="Core\DebounceExecutor.cs" />
+        <Compile Include="..\STranslate\Core\Extensions.cs" Link="Core\Extensions.cs" />
+        <Compile Include="..\STranslate\Core\IdentifiedLanguageStateKind.cs" Link="Core\IdentifiedLanguageStateKind.cs" />
+        <Compile Include="..\STranslate\Core\MainHeaderActions.cs" Link="Core\MainHeaderActions.cs" />
+        <Compile Include="..\STranslate\Core\ProxySettings.cs" Link="Core\ProxySettings.cs" />
+    </ItemGroup>
+
+</Project>

@@ -22,3 +22,7 @@ target/
 
 # superpowers docs
 docs/superpowers/
+# Velopack 打包产物
+Releases/
+# CodeGraph 本地索引缓存
+.codegraph/

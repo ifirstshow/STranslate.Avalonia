@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 
 namespace STranslate.Core;
 
@@ -29,7 +28,8 @@ public class Constant
     public const string Github = "https://github.com/STranslate/STranslate";
     public const string Sponsor = "https://github.com/STranslate/STranslate/tree/main?tab=readme-ov-file#donations";
     public const string Dev = "Dev";
-    public static readonly string Version = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location.NonNull()).ProductVersion.NonNull();
+    // 单文件/AOT 下 Assembly.Location 为空串，用主进程 exe 路径取版本
+    public static readonly string Version = FileVersionInfo.GetVersionInfo(Environment.ProcessPath.NonNull()).ProductVersion.NonNull();
 
     public static readonly Uri GithubUri = new(Github);
     public static readonly Uri ReportUri = new("https://github.com/STranslate/STranslate/issues/new/choose");

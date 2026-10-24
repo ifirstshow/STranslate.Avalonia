@@ -1,0 +1,13 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="STranslate.Avalonia.Views.MouseSelectionIconWindow"
+        Title="" Width="44" Height="40"
+        CanResize="False" ShowInTaskbar="False" ExtendClientAreaToDecorationsHint="True"
+        WindowDecorations="None" TransparencyLevelHint="Transparent" Background="Transparent"
+        Topmost="True" ShowActivated="False"
+        WindowStartupLocation="Manual">
+    <Button x:Name="GoButton" Content="译" FontSize="16" FontWeight="SemiBold"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            Width="40" Height="36" CornerRadius="8"
+            Background="#CC0078D4" Foreground="White" BorderThickness="0" />
+</Window>

@@ -1,0 +1,147 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="STranslate.Avalonia.Views.SettingsWindow"
+        x:CompileBindings="False"
+        Title="设置" Width="560" Height="480" MinWidth="480" MinHeight="380"
+        WindowStartupLocation="CenterScreen"
+        Icon="avares://STranslate.Avalonia/Assets/app.ico">
+    <TabControl Margin="12">
+        <TabItem Header="服务">
+            <ScrollViewer Margin="8">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="默认 OCR 服务" VerticalAlignment="Center" />
+                        <ComboBox Grid.Column="1" x:Name="OcrServiceCombo" HorizontalAlignment="Stretch"
+                                  SelectionChanged="OnOcrServiceChanged" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="默认翻译服务" VerticalAlignment="Center" />
+                        <ComboBox Grid.Column="1" x:Name="TranslateServiceCombo" HorizontalAlignment="Stretch"
+                                  SelectionChanged="OnTranslateServiceChanged" />
+                    </Grid>
+                    <Separator />
+                    <StackPanel x:Name="ExtensionSettingsPanel" Spacing="12" />
+                    <TextBlock x:Name="ExtensionStatusText" Text="扩展设置为即改即存，修改后立即生效。" Opacity="0.6" FontSize="12" />
+                    <Separator />
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="社区插件" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="安装插件(.spkg)…" Click="OnInstallSpkgClick" />
+                            <Button Content="卸载" Click="OnUninstallSpkgClick" />
+                        </StackPanel>
+                        <ListBox x:Name="SpkgList" MinHeight="52" MaxHeight="120" />
+                        <TextBlock Text="社区插件由独立 worker 进程加载，安装/卸载后重启程序生效。" Opacity="0.6" FontSize="12" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        <TabItem Header="通用">
+            <ScrollViewer Margin="8">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="源语言" VerticalAlignment="Center" />
+                        <ComboBox Grid.Column="1" x:Name="SourceLangCombo" HorizontalAlignment="Stretch"
+                                  SelectionChanged="OnSourceLangChanged" />
+                        <TextBlock Grid.Column="2" Text="目标语言" VerticalAlignment="Center" />
+                        <ComboBox Grid.Column="3" x:Name="TargetLangCombo" HorizontalAlignment="Stretch"
+                                  SelectionChanged="OnTargetLangChanged" />
+                    </Grid>
+                    <CheckBox IsChecked="{Binding CtrlCcEnabled}" Content="启用 Ctrl+C+C 剪贴板划词翻译" />
+                    <CheckBox IsChecked="{Binding MouseSelectionEnabled}" Content="启用鼠标划词翻译（双击/拖选）" />
+                    <CheckBox IsChecked="{Binding AutoStart}" Content="开机自动启动" />
+                    <CheckBox IsChecked="{Binding ClipboardMonitorEnabled}" Content="剪贴板监听常驻翻译" />
+                    <CheckBox IsChecked="{Binding MouseSelectionIconEnabled}" Content="划词后显示悬浮图标（点击翻译）" />
+                    <CheckBox IsChecked="{Binding AutoTranslate}" Content="自动翻译（输入后自动执行）" />
+                    <TextBlock Text="以上设置即改即存。" Opacity="0.6" FontSize="12" />
+                    <Separator />
+                    <TextBlock Text="更新" FontWeight="SemiBold" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="检查更新" Command="{Binding CheckUpdateCommand}" IsEnabled="{Binding !IsCheckingUpdate}" />
+                        <TextBlock Text="{Binding UpdateStatusText}" VerticalAlignment="Center" Opacity="0.7" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        <TabItem Header="数据">
+            <ScrollViewer Margin="8">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="数据目录" FontWeight="SemiBold" />
+                    <TextBlock x:Name="DataDirText" TextWrapping="Wrap" Opacity="0.8" FontSize="12" />
+                    <TextBlock x:Name="PortableText" Opacity="0.6" FontSize="12" />
+                    <Separator />
+                    <TextBlock Text="配置备份" FontWeight="SemiBold" />
+                    <TextBlock Text="导出/导入 settings.json、extension-settings.json 与历史数据库。导入后需重启应用生效。" Opacity="0.6" FontSize="12" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="导出配置" Click="OnExportConfig" />
+                        <Button Content="导入配置" Click="OnImportConfig" />
+                        <TextBlock x:Name="DataStatusText" VerticalAlignment="Center" Opacity="0.7" />
+                    </StackPanel>
+                    <Separator />
+                    <TextBlock Text="WebDav 云备份" FontWeight="SemiBold" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="服务地址" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" x:Name="WebDavAddress" PlaceholderText="https://dav.jianguoyun.com/dav/" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="账号" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" x:Name="WebDavUser" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="密码/应用密码" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" x:Name="WebDavPass" PasswordChar="•" />
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="上传备份" Click="OnWebDavUpload" />
+                        <Button Content="恢复备份" Click="OnWebDavRestore" />
+                        <TextBlock x:Name="WebDavStatusText" VerticalAlignment="Center" Opacity="0.7" />
+                    </StackPanel>
+                    <TextBlock Text="云备份以 ST.translate.zip 命名存储于服务地址目录；恢复后需重启应用生效。" Opacity="0.6" FontSize="12" />
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        <TabItem Header="热键">
+            <ScrollViewer Margin="8">
+                <StackPanel x:Name="HotkeysPanel" Spacing="10">
+                    <TextBlock Text="格式：修饰键 Ctrl/Alt/Shift/Win + 主键，如 Alt+G、Ctrl+Shift+X。支持 A-Z、0-9、F1-F24。" Opacity="0.6" TextWrapping="Wrap" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="开关主窗口" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Width="180" x:Name="HkOpenWindow" Text="{Binding OpenWindow}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="输入翻译" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Width="180" x:Name="HkInputTranslate" Text="{Binding InputTranslate}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="划词翻译" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Width="180" x:Name="HkCrosswordTranslate" Text="{Binding CrosswordTranslate}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="截图翻译" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Width="180" x:Name="HkScreenshotTranslate" Text="{Binding ScreenshotTranslate}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="静默 OCR" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Width="180" x:Name="HkSilentOcr" Text="{Binding SilentOcr}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="图片翻译" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Width="180" x:Name="HkImageTranslate" Text="{Binding ImageTranslate}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="静默 TTS" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Width="180" x:Name="HkSilentTts" Text="{Binding SilentTts}" />
+                    </Grid>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBlock Grid.Column="0" Text="增量翻译键" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" Width="180" x:Name="IncKeyBox" />
+                        </Grid>
+                        <TextBlock Text="增量翻译：按住该键（如 F9）连续划选多段文字会累积到输入框，松开后一起翻译。留空关闭。需按保存并应用热键。" Opacity="0.6" FontSize="12" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+                        <Button Content="保存并应用热键" Click="OnSaveHotkeys" />
+                        <TextBlock x:Name="StatusText" VerticalAlignment="Center" Opacity="0.7" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+    </TabControl>
+</Window>

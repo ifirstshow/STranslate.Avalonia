@@ -57,7 +57,21 @@
     <Project Path="Tests/STranslate.Tests/STranslate.Tests.csproj" />
   </Folder>
 
+  <!-- 新版扩展（v2 契约，官方内置） -->
+  <Folder Name="/Extensions/">
+    <Project Path="Extensions/STranslate.Extensions.Translate.MTranServer/STranslate.Extensions.Translate.MTranServer.csproj" />
+    <Project Path="Extensions/STranslate.Extensions.Ocr.Google/STranslate.Extensions.Ocr.Google.csproj" />
+    <Project Path="Extensions/STranslate.Extensions.Ocr.WeChatBuiltIn/STranslate.Extensions.Ocr.WeChatBuiltIn.csproj" />
+    <Project Path="Extensions/STranslate.Extensions.Tts.EdgeTts/STranslate.Extensions.Tts.EdgeTts.csproj" />
+    <Project Path="Extensions/STranslate.Extensions.Translate.OpenAI/STranslate.Extensions.Translate.OpenAI.csproj" />
+    <Project Path="Extensions/STranslate.Extensions.Vocabulary.Eudict/STranslate.Extensions.Vocabulary.Eudict.csproj" />
+  </Folder>
+
   <!-- 主项目 -->
   <Project Path="STranslate/STranslate.csproj" />
+  <Project Path="STranslate.Worker.Ipc/STranslate.Worker.Ipc.csproj" />
+  <Project Path="STranslate.PluginHost/STranslate.PluginHost.csproj" />
+  <Project Path="STranslate.Avalonia/STranslate.Avalonia.csproj" />
   <Project Path="STranslate.Plugin/STranslate.Plugin.csproj" />
+  <Project Path="STranslate.Sdk/STranslate.Sdk.csproj" />
 </Solution>

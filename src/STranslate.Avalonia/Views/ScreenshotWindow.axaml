@@ -1,0 +1,15 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="STranslate.Avalonia.Views.ScreenshotWindow"
+        Title="ScreenshotCapture"
+        WindowDecorations="None" ShowInTaskbar="False" Topmost="True"
+        CanResize="False" ShowActivated="True"
+        Background="Black">
+    <Canvas x:Name="Root">
+        <Image x:Name="FrozenImage" />
+        <Rectangle x:Name="DarkMask" Fill="Black" Opacity="0.35" />
+        <Image x:Name="SelectionImage" IsVisible="False" />
+        <Rectangle x:Name="SelectionBorder" Stroke="#FF0078D4" StrokeThickness="1" Fill="#220078D4" IsVisible="False" />
+        <TextBlock x:Name="SizeHint" Foreground="White" Background="#CC000000" Padding="4,2" FontSize="12" IsHitTestVisible="False" IsVisible="False" />
+    </Canvas>
+</Window>

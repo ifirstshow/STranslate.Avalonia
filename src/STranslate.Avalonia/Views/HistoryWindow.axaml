@@ -1,0 +1,46 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="STranslate.Avalonia.Views.HistoryWindow"
+        x:CompileBindings="False"
+        Title="历史记录" Width="720" Height="520" MinWidth="560" MinHeight="380"
+        WindowStartupLocation="CenterScreen"
+        Icon="avares://STranslate.Avalonia/Assets/app.ico">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="12" RowSpacing="8">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+            <TextBox Grid.Column="0" x:Name="SearchBox" PlaceholderText="搜索源文/译文/备注（回车搜索，清空显示最近）" KeyDown="OnSearchKeyDown" />
+            <Button Grid.Column="1" Content="搜索" Click="OnSearchClick" />
+            <ToggleButton Grid.Column="2" x:Name="FavOnlyToggle" Content="★ 收藏" Click="OnFavOnlyClick" />
+            <Button Grid.Column="3" Content="导出" Click="OnExportClick" />
+            <Button Grid.Column="4" Content="清空" Click="OnClearClick" />
+        </Grid>
+        <ListBox Grid.Row="1" x:Name="HistoryList" DoubleTapped="OnItemDoubleTapped">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8" Margin="2">
+                        <TextBlock Grid.Column="0" Text="{Binding TimeText}" Opacity="0.55" VerticalAlignment="Top" FontSize="12" />
+                        <StackPanel Grid.Column="1">
+                            <TextBlock TextWrapping="Wrap" MaxHeight="52" TextTrimming="CharacterEllipsis">
+                                <Run Text="{Binding SourceText}" Foreground="#CC000000" />
+                                <Run Text="  →  " Foreground="#66000000" />
+                                <Run Text="{Binding ResultText}" FontWeight="SemiBold" />
+                            </TextBlock>
+                            <TextBlock Text="{Binding NoteText}" FontSize="11" Foreground="#99808080"
+                                       TextTrimming="CharacterEllipsis"
+                                       IsVisible="{Binding HasNote}" />
+                        </StackPanel>
+                        <Button Grid.Column="2" Content="{Binding StarText}" Click="OnStarClick" VerticalAlignment="Top"
+                                Background="Transparent" BorderThickness="0" Padding="2,0"
+                                ToolTip.Tip="收藏/取消收藏" />
+                        <Button Grid.Column="3" Content="✎" Click="OnNoteClick" VerticalAlignment="Top"
+                                Background="Transparent" BorderThickness="0" Opacity="0.6" Padding="2,0"
+                                ToolTip.Tip="编辑备注" />
+                        <Button Grid.Column="4" Content="✕" Click="OnDeleteClick" VerticalAlignment="Top"
+                                Background="Transparent" BorderThickness="0" Opacity="0.5" Padding="2,0" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBlock Grid.Row="2" x:Name="FooterText" Opacity="0.55" FontSize="12"
+                   Text="双击条目回填到主窗并翻译；★ 收藏 · ✎ 备注 · ✕ 删除" />
+    </Grid>
+</Window>

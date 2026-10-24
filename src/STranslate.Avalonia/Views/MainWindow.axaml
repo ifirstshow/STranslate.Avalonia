@@ -1,0 +1,61 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:STranslate.Avalonia.ViewModels"
+        x:Class="STranslate.Avalonia.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="STranslate" Width="860" MinWidth="640" MinHeight="420" SizeToContent="Height"
+        Icon="avares://STranslate.Avalonia/Assets/app.ico">
+    <Grid RowDefinitions="Auto,Auto,*,Auto,2*,Auto" Margin="12">
+        <!-- 标题行：置顶/主题 -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,4">
+            <TextBlock Grid.Column="0" Text="STranslate" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <ToggleButton Grid.Column="1" Content="📌 置顶" IsChecked="{Binding IsTopmost}" Padding="6,2" />
+            <Button Grid.Column="2" x:Name="ThemeButton" Content="🌗 主题" Click="OnToggleTheme" Padding="6,2" />
+        </Grid>
+
+        <!-- 语言与服务选择 -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,*,Auto" ColumnSpacing="8" Margin="0,0,0,8">
+            <ComboBox Grid.Column="0" x:Name="SourceLangCombo" HorizontalAlignment="Stretch"
+                      SelectionChanged="OnSourceLangChanged" />
+            <Button Grid.Column="1" Content="⇄" Click="OnSwapLanguages" Padding="8,2" ToolTip.Tip="交换语言" />
+            <ComboBox Grid.Column="2" x:Name="TargetLangCombo" HorizontalAlignment="Stretch"
+                      SelectionChanged="OnTargetLangChanged" />
+            <Button Grid.Column="3" Content="清空" Click="OnClearClick" Padding="8,2" />
+        </Grid>
+
+        <!-- 输入 -->
+        <TextBox x:Name="InputTextBox" Grid.Row="2" Text="{Binding InputText}" MinHeight="110"
+                 AcceptsReturn="True" TextWrapping="Wrap"
+                 PlaceholderText="输入要翻译的内容（Ctrl+Enter 翻译）"
+                 KeyDown="OnInputKeyDown" />
+
+        <!-- 操作行 -->
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="10" Margin="0,8">
+            <Button Grid.Column="0" Command="{Binding TranslateCommand}" Content="翻译" />
+            <Button Grid.Column="1" Content="历史" Click="OnOpenHistory" />
+            <Button Grid.Column="2" Content="设置" Click="OnOpenSettings" />
+            <ProgressBar Grid.Column="3" IsIndeterminate="True" Height="8" VerticalAlignment="Center"
+                         IsVisible="{Binding IsProcessing}" />
+        </Grid>
+
+        <!-- 输出 -->
+        <TextBox Grid.Row="4" x:Name="ResultTextBox" Text="{Binding ResultText}" IsReadOnly="True"
+                 TextWrapping="Wrap" MinHeight="140" DoubleTapped="OnResultDoubleTapped" />
+
+        <!-- 底部：轻提示与错误 -->
+        <StackPanel Grid.Row="5" Margin="0,8,0,0">
+            <Border Background="#1A808080" CornerRadius="4" Padding="10,5"
+                    HorizontalAlignment="Left"
+                    IsVisible="{Binding LightMessage, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Text="{Binding LightMessage}" TextWrapping="Wrap" />
+            </Border>
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                <Button x:Name="CopyButton" Content="复制" Click="OnCopyClick" />
+                <Button Content="朗读" Command="{Binding SpeakCommand}" IsEnabled="{Binding !IsSpeaking}" />
+                <Button Content="＋ 生词本" Command="{Binding SaveVocabCommand}" />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>

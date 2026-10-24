@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <!-- 微信 OCR 依赖本机微信/引擎二进制，按降级矩阵属 Windows 专属能力 -->
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+        <!-- OcrLib/ 为反编译 vendor 代码（ADR-0004），不做告警治理 -->
+        <NoWarn>$(NoWarn);CS8600;CS8601;CS8602;CS8603;CS8604;CS8613;CS8618;CS8619;CS8620;CS8622;CS8625;CS8632;CS0612;CS0618;CS0219;CS0414;CS1591;CS0108;CS0114;CS8765</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+        <OutputPath>..\..\.artifacts\Extensions\Debug\</OutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+        <OutputPath>..\..\.artifacts\Extensions\Release\</OutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- 引擎二进制（wco_data：WeChatOCR.exe/mmmojo/模型）继续取自上游包，仅取内容不含库 -->
+        <PackageReference Include="WeChatOcr" ExcludeAssets="compile;runtime" />
+        <PackageReference Include="Google.Protobuf" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\STranslate.Sdk\STranslate.Sdk.csproj" />
+    </ItemGroup>
+
+</Project>

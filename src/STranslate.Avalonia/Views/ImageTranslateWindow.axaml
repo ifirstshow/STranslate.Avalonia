@@ -1,0 +1,12 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="STranslate.Avalonia.Views.ImageTranslateWindow"
+        Title="ImageTranslate"
+        WindowDecorations="None" ShowInTaskbar="False" Topmost="True"
+        CanResize="False" ShowActivated="True"
+        Background="Transparent">
+    <Panel x:Name="Root">
+        <Image x:Name="SourceImage" />
+        <Canvas x:Name="OverlayCanvas" />
+    </Panel>
+</Window>

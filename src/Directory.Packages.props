@@ -3,10 +3,15 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Avalonia" Version="12.1.4" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.4" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.4" />
     <PackageVersion Include="ChefKeys" Version="0.1.2" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="Costura.Fody" Version="6.2.0" />
     <PackageVersion Include="Dapper.Contrib" Version="2.0.78" />
+    <PackageVersion Include="FluentAvaloniaUI" Version="3.1.0" />
+    <PackageVersion Include="Google.Protobuf" Version="3.29.3" />
     <PackageVersion Include="gong-wpf-dragdrop" Version="4.0.0" />
     <PackageVersion Include="H.InputSimulator" Version="1.5.0" />
     <PackageVersion Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
@@ -14,6 +19,7 @@
     <PackageVersion Include="Markdig.Wpf" Version="0.5.0.1" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.7" />
@@ -44,5 +50,7 @@
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="ZXing.Net.Bindings.ZKWeb.System.Drawing" Version="0.16.9" />
+    <PackageVersion Include="ZXing.Net" Version="0.16.11" />
+    <PackageVersion Include="ZXing.Net.Bindings.ImageSharp.V3" Version="0.16.20" />
   </ItemGroup>
 </Project>
