@@ -23,27 +23,21 @@ function Log([string]$msg, [string]$color = "Yellow") {
 $CleanVersion = $Version -replace '^v', ''
 
 # 0) 社区插件 worker（JIT exe，随安装包分发；ADR-0004）
+# restore 与 publish 拆开：CI 上合并命令的 RestoreTask 会静默失败（MSB4181），拆开后错误可见
 Log "=== 0/3 发布 PluginHost worker ===" "Green"
 $workerProj = Join-Path $RepoRoot "src\STranslate.PluginHost\STranslate.PluginHost.csproj"
-$workerPublished = $false
-foreach ($attempt in 1..3) {
-    dotnet publish $workerProj -c Release -r win-x64 --no-self-contained -o (Join-Path $RepoRoot "src\.artifacts\publish\worker")
-    if ($LASTEXITCODE -eq 0) { $workerPublished = $true; break }
-    Log "worker 发布失败（第 $attempt 次），NuGet 限流时重试通常可过" "Yellow"
-    Start-Sleep -Seconds 5
-}
-if (-not $workerPublished) { Log "worker 发布失败" "Red"; exit 1 }
+dotnet restore $workerProj -r win-x64
+if ($LASTEXITCODE -ne 0) { Log "worker restore 失败" "Red"; exit 1 }
+dotnet publish $workerProj -c Release -r win-x64 --no-self-contained --no-restore -o (Join-Path $RepoRoot "src\.artifacts\publish\worker")
+if ($LASTEXITCODE -ne 0) { Log "worker 发布失败" "Red"; exit 1 }
 Copy-Item (Join-Path $RepoRoot "src\.artifacts\publish\worker\*") $PublishDir -Force
 
 # 1) AOT 发布
 Log "=== 1/3 AOT 发布 ($CleanVersion) ===" "Green"
-foreach ($attempt in 1..3) {
-    dotnet publish $ProjectPath -c Release -r win-x64 -p:PublishAot=true -o $PublishDir
-    if ($LASTEXITCODE -eq 0) { break }
-    if ($attempt -eq 3) { Log "AOT 发布失败" "Red"; exit 1 }
-    Log "AOT 发布失败（第 $attempt 次），重试" "Yellow"
-    Start-Sleep -Seconds 5
-}
+dotnet restore $ProjectPath -r win-x64
+if ($LASTEXITCODE -ne 0) { Log "AOT restore 失败" "Red"; exit 1 }
+dotnet publish $ProjectPath -c Release -r win-x64 -p:PublishAot=true --no-restore -o $PublishDir
+if ($LASTEXITCODE -ne 0) { Log "AOT 发布失败" "Red"; exit 1 }
 
 if ($SkipPack) {
     Log "=== 跳过 vpk 打包（-SkipPack），产物在 $PublishDir ===" "Yellow"
