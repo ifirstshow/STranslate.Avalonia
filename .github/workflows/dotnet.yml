@@ -68,16 +68,6 @@ jobs:
       run: |
         dotnet restore src/STranslate.PluginHost/STranslate.PluginHost.csproj -r win-x64 -p:NuGetAudit=false 2>&1 | Select-Object -Last 8
 
-    - name: Upload restore binlog on failure
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: restore-binlogs
-        path: |
-          restore-worker.binlog
-          restore-worker-verbose.binlog
-        if-no-files-found: ignore
-
     - name: Build and Pack Avalonia
       shell: pwsh
       env:
@@ -93,6 +83,16 @@ jobs:
         draft: false
         files: |
           Releases/*
+
+    - name: Upload restore binlogs
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: restore-binlogs
+        path: |
+          restore-worker.binlog
+          restore-worker-verbose.binlog
+        if-no-files-found: ignore
 
   crosscompile:
     runs-on: ubuntu-latest # 跨平台可编译性校验（不出产物交付）
