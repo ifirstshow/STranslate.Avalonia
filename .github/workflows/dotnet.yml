@@ -5,8 +5,6 @@ name: Public STranslate
 permissions:
   contents: write
 
-env:
-  NUGET_PACKAGES: ${{ github.workspace }}/.nuget-packages
 
 on:
   release:
