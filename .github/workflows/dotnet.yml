@@ -66,7 +66,7 @@ jobs:
     - name: Debug restore (diagnose CI)
       shell: pwsh
       run: |
-        dotnet restore src/STranslate.PluginHost/STranslate.PluginHost.csproj -r win-x64 2>&1 | Select-Object -Last 8
+        dotnet restore src/STranslate.PluginHost/STranslate.PluginHost.csproj -r win-x64 -p:NuGetAudit=false 2>&1 | Select-Object -Last 8
 
     - name: Upload restore binlog on failure
       if: failure()
