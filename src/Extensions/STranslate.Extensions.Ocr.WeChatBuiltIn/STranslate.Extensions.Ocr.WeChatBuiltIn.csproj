@@ -2,8 +2,10 @@
 
     <PropertyGroup>
         <!-- 微信 OCR 依赖本机微信/引擎二进制，按降级矩阵属 Windows 专属能力 -->
-        <TargetFramework>net10.0-windows</TargetFramework>
+        <TargetFrameworks>net10.0-windows</TargetFrameworks>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Linux')) Or $([MSBuild]::IsOSPlatform('OSX'))">net10.0</TargetFrameworks>
         <Nullable>enable</Nullable>
+        <DefineConstants Condition="$(TargetFramework.Contains('windows'))">$(DefineConstants);WINDOWS_TFM</DefineConstants>
         <ImplicitUsings>enable</ImplicitUsings>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>

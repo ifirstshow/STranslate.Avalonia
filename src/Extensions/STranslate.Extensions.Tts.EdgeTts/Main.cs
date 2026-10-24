@@ -1,13 +1,13 @@
 using STranslate.Sdk;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Media.SpeechSynthesis;
 
 namespace STranslate.Extensions.Tts.EdgeTts;
 
 /// <summary>
 /// Windows 自带 TTS（WinRT SpeechSynthesizer）：离线、免 Key。
 /// 扩展只产出 WAV 数据，播放由宿主负责。
+/// WinRT 实现仅 windows TFM 编译；非 Windows 为不支持桩（跨平台编译校验用，Registry 同样隔离）。
 /// </summary>
+#if WINDOWS_TFM
 [Extension(
     "7a3ab25875294602b3afc4ae15fec627",
     "Windows TTS",
@@ -30,7 +30,7 @@ public sealed class Main : ITtsPlugin
 
     public async Task<AudioData> SpeakAsync(string text, CancellationToken cancellationToken = default)
     {
-        using var synthesizer = new SpeechSynthesizer();
+        using var synthesizer = new Windows.Media.SpeechSynthesis.SpeechSynthesizer();
         var voiceName = Context.Settings.Get(VoiceId, string.Empty);
         if (!string.IsNullOrEmpty(voiceName))
         {
@@ -46,3 +46,21 @@ public sealed class Main : ITtsPlugin
         return new AudioData(memory.ToArray(), AudioFormat.Wav);
     }
 }
+#else
+[Extension(
+    "7a3ab25875294602b3afc4ae15fec627",
+    "Windows TTS",
+    Description = "Windows 系统语音合成（离线）",
+    Author = "zggsong")]
+public sealed class Main : ITtsPlugin
+{
+    public IReadOnlyList<SettingItem> SettingItems { get; } = [];
+
+    public void Init(IPluginContext context) { }
+
+    public void Dispose() { }
+
+    public Task<AudioData> SpeakAsync(string text, CancellationToken cancellationToken = default)
+        => Task.FromResult(new AudioData([], AudioFormat.Wav));
+}
+#endif
