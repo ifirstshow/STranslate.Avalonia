@@ -23,19 +23,28 @@ function Log([string]$msg, [string]$color = "Yellow") {
 $CleanVersion = $Version -replace '^v', ''
 
 # 0) 社区插件 worker（JIT exe，随安装包分发；ADR-0004）
-# restore 与 publish 拆开：CI 上合并命令的 RestoreTask 会静默失败（MSB4181），拆开后错误可见
+# CI 上 RestoreTask 偶发静默失败（MSB4181）；诊断显示 -v d 模式下稳定成功，失败时自动降级到详细模式重跑
 Log "=== 0/3 发布 PluginHost worker ===" "Green"
 $workerProj = Join-Path $RepoRoot "src\STranslate.PluginHost\STranslate.PluginHost.csproj"
-dotnet restore $workerProj -r win-x64
-if ($LASTEXITCODE -ne 0) { Log "worker restore 失败" "Red"; exit 1 }
+function Invoke-Dotnet([string]$display, [string]$cmd, [string]$verboseCmd) {
+    Invoke-Expression $cmd
+    if ($LASTEXITCODE -eq 0) { return }
+    Log "$display 失败，详细模式重试（CI RestoreTask 静默失败时 -v d 可过）" "Yellow"
+    Invoke-Expression $verboseCmd
+    if ($LASTEXITCODE -ne 0) { Log "$display 仍失败" "Red"; exit 1 }
+}
+Invoke-Dotnet "worker restore" `
+    "dotnet restore $workerProj -r win-x64" `
+    "dotnet restore $workerProj -r win-x64 -v d"
 dotnet publish $workerProj -c Release -r win-x64 --no-self-contained --no-restore -o (Join-Path $RepoRoot "src\.artifacts\publish\worker")
 if ($LASTEXITCODE -ne 0) { Log "worker 发布失败" "Red"; exit 1 }
 Copy-Item (Join-Path $RepoRoot "src\.artifacts\publish\worker\*") $PublishDir -Force
 
 # 1) AOT 发布
 Log "=== 1/3 AOT 发布 ($CleanVersion) ===" "Green"
-dotnet restore $ProjectPath -r win-x64
-if ($LASTEXITCODE -ne 0) { Log "AOT restore 失败" "Red"; exit 1 }
+Invoke-Dotnet "AOT restore" `
+    "dotnet restore $ProjectPath -r win-x64" `
+    "dotnet restore $ProjectPath -r win-x64 -v d"
 dotnet publish $ProjectPath -c Release -r win-x64 -p:PublishAot=true --no-restore -o $PublishDir
 if ($LASTEXITCODE -ne 0) { Log "AOT 发布失败" "Red"; exit 1 }
 
