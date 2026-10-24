@@ -43,8 +43,8 @@ Copy-Item (Join-Path $RepoRoot "src\.artifacts\publish\worker\*") $PublishDir -F
 # 1) AOT 发布
 Log "=== 1/3 AOT 发布 ($CleanVersion) ===" "Green"
 Invoke-Dotnet "AOT restore" `
-    "dotnet restore $ProjectPath -r win-x64" `
-    "dotnet restore $ProjectPath -r win-x64 -v d"
+    "dotnet restore $ProjectPath -r win-x64 -p:NuGetAudit=false" `
+    "dotnet restore $ProjectPath -r win-x64 -p:NuGetAudit=false -v d"
 dotnet publish $ProjectPath -c Release -r win-x64 -p:PublishAot=true --no-restore -o $PublishDir
 if ($LASTEXITCODE -ne 0) { Log "AOT 发布失败" "Red"; exit 1 }
 
