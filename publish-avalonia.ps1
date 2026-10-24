@@ -36,16 +36,16 @@ function Invoke-Dotnet([string]$display, [string]$cmd, [string]$verboseCmd) {
 Invoke-Dotnet "worker restore" `
     "dotnet restore $workerProj -r win-x64 -p:NuGetAudit=false -bl:$RepoRoot\restore-worker.binlog" `
     "dotnet restore $workerProj -r win-x64 -p:NuGetAudit=false -v d -bl:$RepoRoot\restore-worker-verbose.binlog"
-dotnet publish $workerProj -c Release -r win-x64 --no-self-contained --no-restore -o (Join-Path $RepoRoot "src\.artifacts\publish\worker")
+dotnet publish $workerProjRel -c Release -r win-x64 --no-self-contained --no-restore -o (Join-Path $RepoRoot "src\.artifacts\publish\worker")
 if ($LASTEXITCODE -ne 0) { Log "worker 发布失败" "Red"; exit 1 }
 Copy-Item (Join-Path $RepoRoot "src\.artifacts\publish\worker\*") $PublishDir -Force
 
 # 1) AOT 发布
 Log "=== 1/3 AOT 发布 ($CleanVersion) ===" "Green"
 Invoke-Dotnet "AOT restore" `
-    "dotnet restore $ProjectPath -r win-x64 -p:NuGetAudit=false" `
-    "dotnet restore $ProjectPath -r win-x64 -p:NuGetAudit=false -v d"
-dotnet publish $ProjectPath -c Release -r win-x64 -p:PublishAot=true --no-restore -o $PublishDir
+    "dotnet restore src/STranslate.Avalonia/STranslate.Avalonia.csproj -r win-x64 -p:NuGetAudit=false" `
+    "dotnet restore src/STranslate.Avalonia/STranslate.Avalonia.csproj -r win-x64 -p:NuGetAudit=false"
+dotnet publish src/STranslate.Avalonia/STranslate.Avalonia.csproj -c Release -r win-x64 -p:PublishAot=true --no-restore -o $PublishDir
 if ($LASTEXITCODE -ne 0) { Log "AOT 发布失败" "Red"; exit 1 }
 
 if ($SkipPack) {
