@@ -66,8 +66,7 @@ jobs:
     - name: Debug restore (diagnose CI)
       shell: pwsh
       run: |
-        dotnet --info
-        dotnet restore src/STranslate.PluginHost/STranslate.PluginHost.csproj -v d 2>&1 | Select-Object -Last 40
+        dotnet restore src/STranslate.PluginHost/STranslate.PluginHost.csproj -r win-x64 -v d 2>&1 | Select-String -Pattern "error|fail|Failed" | Select-Object -First 15
 
     - name: Build and Pack Avalonia
       shell: pwsh

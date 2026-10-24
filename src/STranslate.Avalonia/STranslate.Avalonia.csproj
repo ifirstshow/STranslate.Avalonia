@@ -3,8 +3,9 @@
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <!-- 日常构建用 windows TFM（含微信 OCR 等 Windows 专属扩展）；
-             跨平台编译校验由 CI 用 -p:TargetFrameworks=net10.0 覆盖执行 -->
-        <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+             Linux/macOS 评估为纯 net10.0（跨平台编译校验），单数属性后值覆盖前值 -->
+        <TargetFrameworks>net10.0-windows10.0.19041.0</TargetFrameworks>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Linux')) Or $([MSBuild]::IsOSPlatform('OSX'))">net10.0</TargetFrameworks>
         <DefineConstants Condition="$(TargetFramework.Contains('windows'))">$(DefineConstants);WINDOWS_TFM</DefineConstants>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
