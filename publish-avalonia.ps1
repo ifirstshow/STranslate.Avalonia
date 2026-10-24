@@ -34,8 +34,8 @@ function Invoke-Dotnet([string]$display, [string]$cmd, [string]$verboseCmd) {
     if ($LASTEXITCODE -ne 0) { Log "$display 仍失败" "Red"; exit 1 }
 }
 Invoke-Dotnet "worker restore" `
-    "dotnet restore $workerProj -r win-x64 -p:NuGetAudit=false -bl:$RepoRoot\restore-worker.binlog" `
-    "dotnet restore $workerProj -r win-x64 -p:NuGetAudit=false -v d -bl:$RepoRoot\restore-worker-verbose.binlog"
+    "dotnet restore $workerProj -r win-x64 -bl:$RepoRoot\restore-worker.binlog" `
+    "dotnet restore $workerProj -r win-x64 -v d -bl:$RepoRoot\restore-worker-verbose.binlog"
 dotnet publish $workerProjRel -c Release -r win-x64 --no-self-contained --no-restore -o (Join-Path $RepoRoot "src\.artifacts\publish\worker")
 if ($LASTEXITCODE -ne 0) { Log "worker 发布失败" "Red"; exit 1 }
 Copy-Item (Join-Path $RepoRoot "src\.artifacts\publish\worker\*") $PublishDir -Force
