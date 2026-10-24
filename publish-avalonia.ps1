@@ -58,6 +58,7 @@ vpk pack `
     --packVersion $CleanVersion `
     --packDir $PublishDir `
     --mainExe STranslate.Avalonia.exe `
+    --channel avalonia`
     --icon $IconPath
 if ($LASTEXITCODE -ne 0) { Log "vpk 打包失败" "Red"; exit 1 }
 
