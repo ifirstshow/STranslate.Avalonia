@@ -66,7 +66,17 @@ jobs:
     - name: Debug restore (diagnose CI)
       shell: pwsh
       run: |
-        dotnet publish src/STranslate.PluginHost/STranslate.PluginHost.csproj -c Release -r win-x64 --no-self-contained -o src/.artifacts/publish/worker -v d 2>&1 | Select-String -Pattern "error|FAIL|failed|RestoreTask" | Select-Object -First 30
+        dotnet restore src/STranslate.PluginHost/STranslate.PluginHost.csproj -r win-x64 2>&1 | Select-Object -Last 8
+
+    - name: Upload restore binlog on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: restore-binlogs
+        path: |
+          restore-worker.binlog
+          restore-worker-verbose.binlog
+        if-no-files-found: ignore
 
     - name: Build and Pack Avalonia
       shell: pwsh
