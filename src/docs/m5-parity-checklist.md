@@ -65,5 +65,5 @@
 ## 五、非功能项
 
 - ✅ AOT 可行性（M1 验证）；发布时需重跑 AOT 剪剪
-- ✅ CI：跨平台编译校验 job（ubuntu + TargetFrameworks=net10.0）+ Avalonia AOT/vpk 打包 job（tag 触发，产物上传 Release）——2026-10-22 加入 dotnet.yml，待下次 tag 实测
+- ✅ CI：跨平台编译校验 job（ubuntu，✅ 实测通过）+ WPF build job（✅ 实测通过，v0.1.1 已发布）；⚠ Avalonia 打包 job 在 GitHub Windows runner 上存在 restore 静默失败（MSB4181，NuGet 7.9 环境问题，已报排查多轮），**v0.1.1 的 Avalonia 产物经本地 publish-avalonia.ps1 -Upload 发布**（独立 avalonia 更新通道，与 WPF win 通道隔离）；后续 runner 镜像更新后重试接入
 - ⏳ 图标/品牌资产沿用 WPF 版 ✓（app.ico 已复用）
