@@ -15,7 +15,12 @@ on:
   workflow_dispatch:
 
 jobs:
+  # ⚠ 暂停：GitHub Windows runner 上 NuGet RestoreTask 间歇性静默失败（MSB4181），
+  # 已排查 SDK 版本/审计/静态图/workload resolver/离线源/缓存/镜像均未命中；
+  # Windows 产物目前用本地 publish-avalonia.ps1 -Version x -Upload 发布。runner 更新后删掉下行 if 重启用。
   avalonia:
+    if: false
+
     runs-on: windows-2025 # Native AOT 需要 MSVC link.exe，runner 自带 VS
 
     steps:
