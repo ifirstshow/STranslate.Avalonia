@@ -43,7 +43,9 @@ public sealed class HostNotification : INotification
 {
     public void Show(string title, string message)
     {
-        // 通知失败绝不影响主流程（开发模式无 AUMID 时 Toolkit 会抛）
+        // 通知失败绝不影响主流程（开发模式无 AUMID 时 Toolkit 会抛）；
+        // Toolkit 的 Show() 依赖 WinRT，仅 windows TFM 可用
+#if WINDOWS_TFM
         try
         {
             new Microsoft.Toolkit.Uwp.Notifications.ToastContentBuilder()
@@ -55,5 +57,6 @@ public sealed class HostNotification : INotification
         {
             Program.LogError("Toast", e);
         }
+#endif
     }
 }
