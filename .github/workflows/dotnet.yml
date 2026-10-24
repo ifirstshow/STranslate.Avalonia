@@ -77,8 +77,7 @@ jobs:
       shell: pwsh
       env:
         VERSION: ${{ github.ref_name }}
-      run: |
-        .\publish-avalonia.ps1 -Version $env:VERSION
+      run: pwsh -File ./publish-avalonia.ps1 -Version $env:VERSION
 
     - name: Release Avalonia
       uses: softprops/action-gh-release@v2
