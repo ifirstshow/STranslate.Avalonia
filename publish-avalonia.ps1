@@ -1,4 +1,4 @@
-# STranslate.Avalonia 打包发布脚本
+﻿# STranslate.Avalonia 打包发布脚本
 # 用法: .\publish-avalonia.ps1 [-Version 1.0.0] [-SkipPack] [-Upload]
 # 前置: dotnet tool install -g vpk（首次）; Upload 需 gh CLI 登录
 param(
