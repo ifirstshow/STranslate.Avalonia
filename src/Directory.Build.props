@@ -11,6 +11,8 @@
         <EnableSourceLink>false</EnableSourceLink>
         <!--// 集中管理编译输出，将 bin 和 obj 统一放入 .artifacts 目录 //-->
         <ArtifactsPath>$(MSBuildThisFileDirectory).artifacts</ArtifactsPath>
+        <!-- .NET 10 静态图 restore 对 Link/条件项项目静默失败（MSB4181），禁用回传统 restore -->
+        <RestoreUseStaticGraphEvaluation>false</RestoreUseStaticGraphEvaluation>
     </PropertyGroup>
 
     <!--// 清理 WPF 临时编译文件夹 //-->
