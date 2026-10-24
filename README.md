@@ -1,93 +1,74 @@
 <div align="center">
 
-<p>
-<a href="https://github.com/STranslate/STranslate" target="_blank">
-<img align="center" alt="STranslate" width="200" src="./images/favicon.svg" />
-</a>
-</p>
-<p>
-<a href="https://github.com/STranslate/STranslate/blob/main/LICENSE" target="_self">
- <img alt="Latest GitHub release" src="https://img.shields.io/github/license/ZGGSONG/STranslate" />
-</a>
-<a href="https://github.com/STranslate/STranslate/releases/latest" target="_blank">
- <img alt="Latest GitHub release" src="https://img.shields.io/github/release/ZGGSONG/STranslate.svg" />
-</a>
-<a href="https://github.com/STranslate/STranslate/releases" target="_self">
- <img alt="Downloads" src="https://img.shields.io/github/downloads/ZGGSONG/STranslate/total" />
-</a>
-<a href="https://github.com/STranslate/STranslate/discussions" target="_self">
- <img alt="Discussions" src="https://img.shields.io/github/discussions/ZGGSONG/STranslate" />
-</a>
-</p>
+<h1 align="center">STranslate.Avalonia</h1>
 
-<h1 align="center">STranslate 2.0</h1>
-
-**English** | [**简体中文**](./README_ZH.md)
-
-<p align="center">
-  <a href="https://trendshift.io/repositories/15843" target="_blank">
-    <img src="https://trendshift.io/api/badge/repositories/15843" alt="STranslate%2FSTranslate | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
-  </a>
-
-  <a href="https://hellogithub.com/repository/STranslate/STranslate" target="_blank">
-    <img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=2af2034bb1e84122aac1d39046be20ec&claim_uid=WnBC6wua27iPR9t&theme=neutral" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" />
-  </a>
-</p>
-
-<p align="center">A <strong>ready-to-go</strong> translation and OCR tool developed with WPF.</p>
+[**简体中文**](./README_ZH.md) | **English** | [**English**](./README.md)
 
 </div>
 
-## Access
+An **Avalonia cross-platform rewrite** of [STranslate](https://github.com/ZGGSONG/STranslate) (a Windows translation/OCR tool by [zggsong](https://github.com/zggsong)): shipped as Native AOT for Windows, with an architecture ready for macOS/Linux.
 
-| Overseas | Domestic |
-| :--: | :--: |
-| **[Github](https://github.com/STranslate/STranslate)** | **[Gitee](https://gitee.com/zggsong/STranslate)** |
+> **Relation to the WPF original**: this repo is forked from and shares history with the original, but **plugins and configs are NOT interchangeable** between the Avalonia and WPF editions (the plugin contract was redesigned as SDK v2). Do not mix plugins or config backups across editions.
 
-## Installation
+## Download
 
-Download the latest [Release](https://github.com/STranslate/STranslate/releases) version and extract it to use.
+Get it from [Releases](https://github.com/ifirstshow/STranslate.Avalonia/releases):
 
-## Usage
+| File | Description |
+| --- | --- |
+| `STranslate.Avalonia-avalonia-Setup.exe` | Installer (with auto-update on the `avalonia` channel) |
+| `STranslate.Avalonia-avalonia-Portable.zip` | Portable (extract and run) |
 
-[Document](https://stranslate.zggsong.com)
+## Features
 
-## Discussion
+- Translation: manual/auto in main window, text selection (double-click/drag), Ctrl+C+C, clipboard monitor, incremental translate
+- OCR: screenshot OCR (built-in WeChat/Google), silent OCR, standalone OCR window (annotation/QR code/import-export)
+- Image translation: in-place overlay, re-translate / re-screenshot
+- TTS (Windows voices), vocabulary (Eudic), history (favorites/notes/export)
+- Global hotkeys (auto-retry on conflict), external call API (HTTP 51080)
+- Backup: WebDav sync + local export/import
+- Updates: Velopack auto-update
 
-If you have questions, please go to [Discussions](https://github.com/STranslate/STranslate/discussions) for discussion.
+## Bundled Extensions
 
-> If you want to join the user exchange group, you can scan the QR code below
+| Type | Extensions |
+| --- | --- |
+| Translate | MTranServer (offline), OpenAI, ICiba |
+| OCR | Built-in WeChat, Google |
+| TTS | Windows TTS |
+| Vocabulary | Eudic |
 
-<img src="./images/telegram_group.jpg" Width="160" />
+## Plugin Development (Community Plugins)
 
-## Support the project
+The Avalonia edition uses **plugin SDK v2** (`STranslate.Sdk`): metadata-driven settings, no UI dependencies, plain-data service results.
+Community plugins ship as `.spkg` (zip) archives, loaded by an isolated JIT worker process (crash-isolated from the host), installed via Settings → Services → Community Plugins.
 
-<a href="https://jb.gg/OpenSourceSupport"><img src="./images/jb_beam.svg" /></a>
+- SDK 契约：[src/STranslate.Sdk](./src/STranslate.Sdk)
+- 扩展示例：[src/Extensions](./src/Extensions)
+- 设计文档：[docs/adr/0004-hybrid-plugin-architecture.md](./docs/adr/0004-hybrid-plugin-architecture.md)
 
-## Donations
+> Note: WPF-edition (original) plugins are **not compatible**; they must be recompiled against SDK v2.
 
-If you like it, you can buy the author a cup of coffee.
+## Development
 
-> Thank you to those who rewarded me [Sponsor List](Sponsor.md)
+```powershell
+# Daily run (windows TFM, includes WeChat OCR)
+dotnet run --project src/STranslate.Avalonia
 
-| WeChat | Alipay |
-| :--: | :--: |
-|![wehcatpay](./images/wechatpay.jpg) | ![alipay](./images/alipay.jpg) |
+# Cross-compile check (same as CI)
+dotnet build src/STranslate.Avalonia/STranslate.Avalonia.csproj -p:TargetFrameworks=net10.0
 
-## Author & Maintainer
+# Release (AOT + vpk pack + upload to Release)
+.\publish-avalonia.ps1 -Version <版本号> -Upload
+```
 
-**STranslate**
+Architecture decisions: [docs/adr](./docs/adr). Parity checklist: [src/docs/m5-parity-checklist.md](./src/docs/m5-parity-checklist.md).
 
-Copyright © [zggsong](https://github.com/zggsong)
+## Acknowledgements
 
-- Original author: [zggsong](https://github.com/zggsong)
-- Organization: [STranslate](https://github.com/STranslate)
-- License: [MIT](./LICENSE)
+- The original [STranslate](https://github.com/ZGGSONG/STranslate) by [zggsong](https://github.com/zggsong) — this project is a rebuild on top of their work
+- The original docs site ([stranslate.zggsong.com](https://stranslate.zggsong.com)) documents the **WPF edition**; parts of it do not apply here
 
-> [Website](https://stranslate.zggsong.com) [Blog](https://www.zggsong.com)
+## License
 
-
-## Star History
-
-[![Star History Chart](https://star-history.dera.page/svg?repos=STranslate/STranslate&type=Date)](https://star-history.dera.page/#STranslate/STranslate&Date)
-
+MIT, per the original [LICENSE](./LICENSE). Copyright © 2022 zggsong.

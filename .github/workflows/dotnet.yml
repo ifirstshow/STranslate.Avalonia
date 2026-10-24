@@ -20,40 +20,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: windows-2025 # 添加EnableWindowsTargeting可支持跨平台编译WPF项目
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v6
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5
-      with:
-        dotnet-version: '10.0.303'
-
-    - name: Install vpk
-      run: dotnet tool install -g vpk
-
-    - name: Build and Pack
-      shell: pwsh
-      env:
-        VERSION: ${{ github.ref_name }}
-        REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-      run: |
-        .\build.ps1 $env:VERSION
-        .\post_build.ps1 -Version $env:VERSION -RepoUrl $env:REPO_URL
-
-    - name: Release
-      uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        tag_name: ${{ github.ref_name }}
-        body_path: CHANGELOG.md
-        draft: false # 设置为 false 可立即发布版本
-        files: |
-          publish/*
-
   avalonia:
     runs-on: windows-2025 # Native AOT 需要 MSVC link.exe，runner 自带 VS
 
