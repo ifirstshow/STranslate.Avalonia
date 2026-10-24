@@ -26,3 +26,4 @@ docs/superpowers/
 Releases/
 # CodeGraph 本地索引缓存
 .codegraph/
+*.binlog

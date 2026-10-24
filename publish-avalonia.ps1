@@ -31,7 +31,7 @@ New-Item -ItemType Directory -Force -Path $PublishDir | Out-Null
 Copy-Item (Join-Path $RepoRoot "src/.artifacts/publish/worker/*") $PublishDir -Force
 
 Log "=== 1/3 AOT 发布 ($CleanVersion) ===" "Green"
-dotnet publish $ProjectPath -c Release -r win-x64 -p:PublishAot=true -o $PublishDir
+dotnet publish $ProjectPath -f net10.0-windows10.0.19041.0 -c Release -r win-x64 -p:PublishAot=true -o $PublishDir
 if ($LASTEXITCODE -ne 0) { Log "AOT 发布失败" "Red"; exit 1 }
 
 if ($SkipPack) {
