@@ -9,6 +9,7 @@ permissions:
 # restore 报 NU1504 重复项并静默失败（MSB4181）；主程序不使用 workload，全局禁用
 env:
   MSBuildEnableWorkloadResolver: false
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget-packages
 
 on:
   release:
@@ -20,7 +21,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # 添加EnableWindowsTargeting可支持跨平台编译WPF项目
+    runs-on: windows-2025 # 添加EnableWindowsTargeting可支持跨平台编译WPF项目
 
     steps:
     - name: Checkout
@@ -54,7 +55,7 @@ jobs:
           publish/*
 
   avalonia:
-    runs-on: windows-latest # Native AOT 需要 MSVC link.exe，runner 自带 VS
+    runs-on: windows-2025 # Native AOT 需要 MSVC link.exe，runner 自带 VS
 
     steps:
     - name: Checkout
