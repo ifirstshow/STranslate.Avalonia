@@ -26,7 +26,7 @@
 | 插件 PluginPage | PluginMarketSettingsDialog 插件市场对话框（原版即有市场） | ❌ 缺（.spkg 安装已可，市场 UI 缺） |
 | 网络 NetworkPage | 代理设置（ProxySettings） | ❌ 缺（后端已备） |
 | 历史 HistoryPage | 原版设置内嵌历史管理 | ⏳ 独立窗口已有 |
-| 关于 AboutPage | 版本/检查更新/致谢/开源许可 | ❌ 缺 |
+| 关于 AboutPage | 版本/检查更新/致谢/开源许可 | ✅ 2026-10-25 关于页（检查更新/致谢/打开原版仓库） |
 | 独立窗口 StandalonePage | 独立取词窗口配置 | ❌ 缺 |
 
 ## 三、图片翻译（原版三形态）
