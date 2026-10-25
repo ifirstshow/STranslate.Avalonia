@@ -14,13 +14,8 @@
                         <ComboBox Grid.Column="1" x:Name="OcrServiceCombo" HorizontalAlignment="Stretch"
                                   SelectionChanged="OnOcrServiceChanged" />
                     </Grid>
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                        <TextBlock Grid.Column="0" Text="默认翻译服务" VerticalAlignment="Center" />
-                        <ComboBox Grid.Column="1" x:Name="TranslateServiceCombo" HorizontalAlignment="Stretch"
-                                  SelectionChanged="OnTranslateServiceChanged" />
-                    </Grid>
-                    <Separator />
-                    <StackPanel x:Name="ExtensionSettingsPanel" Spacing="12" />
+                    <TextBlock Text="翻译服务：启用的服务会在点“翻译”时并发执行；开关即改即存。" Opacity="0.6" FontSize="12" />
+                    <StackPanel x:Name="ServiceCardsPanel" Spacing="8" />
                     <TextBlock x:Name="ExtensionStatusText" Text="扩展设置为即改即存，修改后立即生效。" Opacity="0.6" FontSize="12" />
                     <Separator />
                     <StackPanel Spacing="8">

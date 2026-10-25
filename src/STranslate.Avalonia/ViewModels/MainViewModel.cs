@@ -88,6 +88,9 @@ public partial class MainViewModel : ObservableObject
             ?? services.FirstOrDefault(x => x.AsTranslate is not null);
         _selectedOcrService = services.FirstOrDefault(x => x.Id == s.OcrServiceId && x.AsOcr is not null)
             ?? services.FirstOrDefault(x => x.AsOcr is not null);
+
+        foreach (var svc in Services)
+            svc.IsEnabled = !s.DisabledServiceIds.Contains(svc.Id);
     }
 
     /// <summary>触发系统构建后回接（仅 Windows 非空），并把当前设置值推送给触发系统。</summary>
@@ -211,7 +214,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task TranslateAsync(CancellationToken cancellationToken)
     {
-        var services = Services.Where(s => s.AsTranslate is not null).ToList();
+        var services = Services.Where(s => s.AsTranslate is not null && s.IsEnabled).ToList();
         if (services.Count == 0 || string.IsNullOrWhiteSpace(InputText))
             return;
 

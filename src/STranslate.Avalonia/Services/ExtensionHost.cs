@@ -11,6 +11,9 @@ public sealed class ExtensionService
     public required string Name { get; init; }
     public required IPlugin Plugin { get; init; }
 
+    /// <summary>服务启停（设置页卡片开关；禁用的服务不参与并发翻译）。</summary>
+    public bool IsEnabled { get; set; } = true;
+
     public ITranslatePlugin? AsTranslate => Plugin as ITranslatePlugin;
     public IOcrPlugin? AsOcr => Plugin as IOcrPlugin;
     public ITtsPlugin? AsTts => Plugin as ITtsPlugin;

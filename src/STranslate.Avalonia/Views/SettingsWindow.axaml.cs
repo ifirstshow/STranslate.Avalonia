@@ -46,12 +46,10 @@ public partial class SettingsWindow : Window
     private void InitCombos()
     {
         OcrServiceCombo.ItemsSource = _viewModel.OcrServices;
-        TranslateServiceCombo.ItemsSource = _viewModel.TranslateServices;
         SourceLangCombo.ItemsSource = _viewModel.Languages;
         TargetLangCombo.ItemsSource = _viewModel.Languages;
 
         OcrServiceCombo.SelectedItem = _viewModel.SelectedOcrService;
-        TranslateServiceCombo.SelectedItem = _viewModel.SelectedService;
         SourceLangCombo.SelectedItem = _viewModel.SourceLang;
         TargetLangCombo.SelectedItem = _viewModel.TargetLang;
         _comboSyncing = false;
@@ -62,13 +60,6 @@ public partial class SettingsWindow : Window
         if (_comboSyncing)
             return;
         _viewModel.SelectedOcrService = OcrServiceCombo.SelectedItem as ExtensionService;
-    }
-
-    private void OnTranslateServiceChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (_comboSyncing)
-            return;
-        _viewModel.SelectedService = TranslateServiceCombo.SelectedItem as ExtensionService;
     }
 
     private void OnSourceLangChanged(object? sender, SelectionChangedEventArgs e)
@@ -148,7 +139,6 @@ public partial class SettingsWindow : Window
     {
         _comboSyncing = true;
         OcrServiceCombo.SelectedItem = _viewModel.SelectedOcrService;
-        TranslateServiceCombo.SelectedItem = _viewModel.SelectedService;
         SourceLangCombo.SelectedItem = _viewModel.SourceLang;
         TargetLangCombo.SelectedItem = _viewModel.TargetLang;
         IncKeyBox.Text = _viewModel.IncrementalTranslateKey;
@@ -350,45 +340,77 @@ public partial class SettingsWindow : Window
     {
         foreach (var svc in _viewModel.Services)
         {
-            var items = svc.Plugin.SettingItems;
-            if (items.Count == 0)
+            ServiceCardsPanel.Children.Add(BuildServiceCard(svc));
+        }
+    }
+
+    /// <summary>单张服务卡：启停开关 + 服务名 + 内嵌设置表单（对齐原版 ServicePanel）。</summary>
+    private Border BuildServiceCard(ExtensionService svc)
+    {
+        var card = new Border
+        {
+            Background = new global::Avalonia.Media.SolidColorBrush(global::Avalonia.Media.Color.Parse("#14808080")),
+            BorderBrush = new global::Avalonia.Media.SolidColorBrush(global::Avalonia.Media.Color.Parse("#22808080")),
+            BorderThickness = new global::Avalonia.Thickness(1),
+            CornerRadius = new global::Avalonia.CornerRadius(6),
+            Padding = new global::Avalonia.Thickness(10, 6, 10, 8)
+        };
+        var body = new StackPanel { Spacing = 8 };
+
+        // 卡头：启停开关 + 服务名
+        var header = new Grid { ColumnDefinitions = ColumnDefinitions.Parse("Auto,Auto,*") };
+        var toggle = new ToggleSwitch { IsChecked = svc.IsEnabled, Padding = new global::Avalonia.Thickness(2, 0), MinWidth = 0 };
+        toggle.IsCheckedChanged += (_, _) =>
+        {
+            svc.IsEnabled = toggle.IsChecked == true;
+            var disabled = AppSettings.Current.DisabledServiceIds;
+            if (svc.IsEnabled)
+                disabled.Remove(svc.Id);
+            else if (!disabled.Contains(svc.Id))
+                disabled.Add(svc.Id);
+            AppSettings.Current.Save();
+        };
+        header.Children.Add(toggle);
+        var nameText = new TextBlock
+        {
+            Text = svc.Name,
+            FontWeight = FontWeight.SemiBold,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        Grid.SetColumn(nameText, 1);
+        header.Children.Add(nameText);
+        body.Children.Add(header);
+
+        // 内嵌设置表单
+        var section = new StackPanel { Spacing = 8 };
+        foreach (var item in svc.Plugin.SettingItems)
+        {
+            var control = BuildItemControl(svc.Id, item);
+            if (control is null)
+            {
+                section.Children.Add(new TextBlock
+                {
+                    Text = $"{item.Label}：该设置项类型暂不支持编辑",
+                    Opacity = 0.5,
+                    FontSize = 12
+                });
                 continue;
-
-            var section = new StackPanel { Spacing = 8 };
-            section.Children.Add(new TextBlock
-            {
-                Text = svc.Name,
-                FontWeight = FontWeight.SemiBold,
-                Margin = new Thickness(0, 4, 0, 0)
-            });
-
-            foreach (var item in items)
-            {
-                var control = BuildItemControl(svc.Id, item);
-                if (control is null)
-                {
-                    section.Children.Add(new TextBlock
-                    {
-                        Text = $"{item.Label}：该设置项类型暂不支持编辑",
-                        Opacity = 0.5,
-                        FontSize = 12
-                    });
-                    continue;
-                }
-
-                var row = new Grid
-                {
-                    ColumnDefinitions = ColumnDefinitions.Parse("180,*"),
-                    ColumnSpacing = 8
-                };
-                row.Children.Add(new TextBlock { Text = item.Label, VerticalAlignment = VerticalAlignment.Center });
-                Grid.SetColumn(control, 1);
-                row.Children.Add(control);
-                section.Children.Add(row);
             }
 
-            ExtensionSettingsPanel.Children.Add(section);
+            var row = new Grid
+            {
+                ColumnDefinitions = ColumnDefinitions.Parse("180,*"),
+                ColumnSpacing = 8
+            };
+            row.Children.Add(new TextBlock { Text = item.Label, VerticalAlignment = VerticalAlignment.Center });
+            Grid.SetColumn(control, 1);
+            row.Children.Add(control);
+            section.Children.Add(row);
         }
+        if (svc.Plugin.SettingItems.Count > 0)
+            body.Children.Add(section);
+        card.Child = body;
+        return card;
     }
 
     private Control? BuildItemControl(string extensionId, SettingItem item)
