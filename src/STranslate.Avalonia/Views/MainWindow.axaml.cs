@@ -109,22 +109,41 @@ public partial class MainWindow : Window
             vm.SwapLanguagesCommand.Execute(null);
     }
 
-    private void OnClearClick(object? sender, RoutedEventArgs e)
+    /// <summary>服务切换弹层：选中后收起。</summary>
+    private void OnServiceSwitcherSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (DataContext is MainViewModel vm)
-        {
-            vm.InputText = string.Empty;
-            vm.ResultText = string.Empty;
-            vm.ErrorMessage = null;
-        }
-        FocusInput();
+        if (e.AddedItems.Count > 0)
+            ServiceSwitcherButton.Flyout?.Hide();
     }
 
     private void OnResultDoubleTapped(object? sender, TappedEventArgs e)
     {
         // 双击结果区 = 复制
-        if (DataContext is MainViewModel { ResultText.Length: > 0 } vm)
-            OnCopyClick(CopyButton, e);
+        if (DataContext is MainViewModel { ResultText.Length: > 0 })
+            OnCopyClick(this, e);
+    }
+
+    private async void OnCopyInputClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainViewModel { InputText.Length: > 0 } vm &&
+            TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard)
+        {
+            var transfer = new DataTransfer();
+            transfer.Add(DataTransferItem.CreateText(vm.InputText));
+            await clipboard.SetDataAsync(transfer);
+        }
+    }
+
+    private void OnRemoveLineBreaksClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainViewModel { InputText.Length: > 0 } vm)
+            vm.InputText = vm.InputText.Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ');
+    }
+
+    private void OnRemoveSpacesClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainViewModel { InputText.Length: > 0 } vm)
+            vm.InputText = vm.InputText.Replace(" ", string.Empty);
     }
 
     private static HistoryWindow? _historyWindow;

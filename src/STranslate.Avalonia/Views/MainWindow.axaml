@@ -3,59 +3,150 @@
         xmlns:vm="using:STranslate.Avalonia.ViewModels"
         x:Class="STranslate.Avalonia.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Title="STranslate" Width="860" MinWidth="640" MinHeight="420" SizeToContent="Height"
-        Icon="avares://STranslate.Avalonia/Assets/app.ico">
-    <Grid RowDefinitions="Auto,Auto,*,Auto,2*,Auto" Margin="12">
-        <!-- 标题行：置顶/主题 -->
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,4">
-            <TextBlock Grid.Column="0" Text="STranslate" FontWeight="SemiBold" VerticalAlignment="Center" />
-            <ToggleButton Grid.Column="1" Content="📌 置顶" IsChecked="{Binding IsTopmost}" Padding="6,2" />
-            <Button Grid.Column="2" x:Name="ThemeButton" Content="🌗 主题" Click="OnToggleTheme" Padding="6,2" />
+        Title="STranslate" Width="520" MinWidth="400" MinHeight="300" SizeToContent="Height"
+        Icon="avares://STranslate.Avalonia/Assets/app.ico"
+        FontFamily="Microsoft YaHei UI,Segoe UI">
+    <Window.Resources>
+        <!-- Segoe Fluent Icons 图标按钮（Win10 回退 MDL2） -->
+        <x:String x:Key="IconCopy">&#xE8C8;</x:String>
+        <x:String x:Key="IconSpeaker">&#xE7F6;</x:String>
+        <x:String x:Key="IconStop">&#xE71A;</x:String>
+        <x:String x:Key="IconStar">&#xE734;</x:String>
+        <FontFamily x:Key="IconFont">Segoe Fluent Icons,Segoe MDL2 Assets</FontFamily>
+        <x:Double x:Key="IconSize">15</x:Double>
+    </Window.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="10,8,10,8">
+        <!-- 标题行：置顶 / 主题 / 历史 / 设置 -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="2" Margin="0,0,0,8">
+            <ToggleButton Grid.Column="0" IsChecked="{Binding IsTopmost}" Padding="4,2"
+                          ToolTip.Tip="置顶" FontSize="12"
+                          Content="📌" Background="Transparent" BorderThickness="0" />
+            <Button Grid.Column="1" x:Name="ServiceSwitcherButton" HorizontalContentAlignment="Left"
+                    Background="Transparent" BorderThickness="0" Padding="4,2" Margin="2,0,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <TextBlock Text="STranslate" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding SelectedService.Name}" Opacity="0.65" FontSize="12"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="▾" FontSize="10" VerticalAlignment="Center" Opacity="0.65" />
+                </StackPanel>
+                <Button.Flyout>
+                    <Flyout Placement="BottomEdgeAlignedLeft">
+                        <ListBox ItemsSource="{Binding Services}"
+                                 SelectedItem="{Binding SelectedService}" MinWidth="190" MaxHeight="320"
+                                 SelectionChanged="OnServiceSwitcherSelectionChanged">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}" Margin="4,2" />
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+            <Button Grid.Column="3" Content="🌗" Click="OnToggleTheme" Padding="4,2" ToolTip.Tip="切换主题"
+                    Background="Transparent" BorderThickness="0" FontSize="12" />
+            <Button Grid.Column="4" Content="🕘" Click="OnOpenHistory" Padding="4,2" ToolTip.Tip="历史记录"
+                    Background="Transparent" BorderThickness="0" FontSize="12" />
+            <Button Grid.Column="5" Content="⚙" Click="OnOpenSettings" Padding="4,2" ToolTip.Tip="设置"
+                    Background="Transparent" BorderThickness="0" FontSize="12" />
         </Grid>
 
-        <!-- 语言与服务选择 -->
-        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,*,Auto" ColumnSpacing="8" Margin="0,0,0,8">
+        <!-- 输入卡片 -->
+        <Border Grid.Row="1" Background="#14808080" BorderBrush="#22808080" BorderThickness="1"
+                CornerRadius="6" Padding="10,6,6,4">
+            <StackPanel>
+                <TextBox x:Name="InputTextBox" Text="{Binding InputText}" MinHeight="72" MaxHeight="220"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         Background="Transparent" BorderThickness="0"
+                         PlaceholderText="输入要翻译的内容（Ctrl+Enter 翻译）"
+                         KeyDown="OnInputKeyDown" />
+                <StackPanel Orientation="Horizontal" Spacing="2" MinHeight="26">
+                    <Button Command="{Binding SaveVocabCommand}" ToolTip.Tip="加入生词本"
+                            Background="Transparent" BorderThickness="0" Padding="4,2"
+                            FontFamily="{StaticResource IconFont}" FontSize="{StaticResource IconSize}"
+                            Content="{StaticResource IconStar}" />
+                    <Button Command="{Binding SpeakInputCommand}" ToolTip.Tip="朗读输入"
+                            Background="Transparent" BorderThickness="0" Padding="4,2"
+                            FontFamily="{StaticResource IconFont}" FontSize="{StaticResource IconSize}"
+                            Content="{StaticResource IconSpeaker}"
+                            IsVisible="{Binding InputText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <Button Click="OnCopyInputClick" ToolTip.Tip="复制输入"
+                            Background="Transparent" BorderThickness="0" Padding="4,2"
+                            FontFamily="{StaticResource IconFont}" FontSize="{StaticResource IconSize}"
+                            Content="{StaticResource IconCopy}"
+                            IsVisible="{Binding InputText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <Button Content="去换行" Click="OnRemoveLineBreaksClick" ToolTip.Tip="移除换行符"
+                            Background="Transparent" BorderThickness="0" Padding="4,2" FontSize="12"
+                            IsVisible="{Binding InputText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <Button Content="去空格" Click="OnRemoveSpacesClick" ToolTip.Tip="移除空格"
+                            Background="Transparent" BorderThickness="0" Padding="4,2" FontSize="12"
+                            IsVisible="{Binding InputText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- 语言行 -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,*,Auto,Auto" ColumnSpacing="4" Margin="0,6,0,6">
             <ComboBox Grid.Column="0" x:Name="SourceLangCombo" HorizontalAlignment="Stretch"
                       SelectionChanged="OnSourceLangChanged" />
-            <Button Grid.Column="1" Content="⇄" Click="OnSwapLanguages" Padding="8,2" ToolTip.Tip="交换语言" />
+            <Button Grid.Column="1" Content="⇄" Click="OnSwapLanguages" Padding="6,2" ToolTip.Tip="交换语言" />
             <ComboBox Grid.Column="2" x:Name="TargetLangCombo" HorizontalAlignment="Stretch"
                       SelectionChanged="OnTargetLangChanged" />
-            <Button Grid.Column="3" Content="清空" Click="OnClearClick" Padding="8,2" />
-        </Grid>
-
-        <!-- 输入 -->
-        <TextBox x:Name="InputTextBox" Grid.Row="2" Text="{Binding InputText}" MinHeight="110"
-                 AcceptsReturn="True" TextWrapping="Wrap"
-                 PlaceholderText="输入要翻译的内容（Ctrl+Enter 翻译）"
-                 KeyDown="OnInputKeyDown" />
-
-        <!-- 操作行 -->
-        <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="10" Margin="0,8">
-            <Button Grid.Column="0" Command="{Binding TranslateCommand}" Content="翻译" />
-            <Button Grid.Column="1" Content="历史" Click="OnOpenHistory" />
-            <Button Grid.Column="2" Content="设置" Click="OnOpenSettings" />
-            <ProgressBar Grid.Column="3" IsIndeterminate="True" Height="8" VerticalAlignment="Center"
+            <Button Grid.Column="3" Command="{Binding TranslateCommand}" Content="翻译" Padding="8,2" />
+            <ProgressBar Grid.Column="4" IsIndeterminate="True" Width="56" Height="6" VerticalAlignment="Center"
                          IsVisible="{Binding IsProcessing}" />
         </Grid>
 
-        <!-- 输出 -->
-        <TextBox Grid.Row="4" x:Name="ResultTextBox" Text="{Binding ResultText}" IsReadOnly="True"
-                 TextWrapping="Wrap" MinHeight="140" DoubleTapped="OnResultDoubleTapped" />
+        <!-- 输出区：每启用服务一张卡（对齐原版 OutputControl） -->
+        <ItemsControl Grid.Row="3" ItemsSource="{Binding OutputItems}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="#14808080" BorderBrush="#22808080" BorderThickness="1"
+                            CornerRadius="6" Padding="10,5,6,4" Margin="0,0,0,6">
+                        <StackPanel>
+                            <!-- 卡头：服务名 + 进度环 + 耗时 + 重试 -->
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,2">
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="{Binding ServiceName}" FontWeight="SemiBold" FontSize="12"
+                                               VerticalAlignment="Center" />
+                                    <ProgressBar IsIndeterminate="True" Width="40" Height="6"
+                                                 VerticalAlignment="Center"
+                                                 IsVisible="{Binding IsProcessing}" />
+                                    <TextBlock FontSize="10" Opacity="0.6" VerticalAlignment="Center"
+                                               Text="{Binding DurationText}"
+                                               IsVisible="{Binding HasDuration}" />
+                                </StackPanel>
+                                <Button Grid.Column="1" Command="{Binding RetryCommand}" ToolTip.Tip="重试"
+                                        Background="Transparent" BorderThickness="0" Padding="4,0" FontSize="12"
+                                        Content="⟳" />
+                                <Button Grid.Column="2" Command="{Binding CopyCommand}" ToolTip.Tip="复制"
+                                        Background="Transparent" BorderThickness="0" Padding="4,0"
+                                        FontFamily="{StaticResource IconFont}" FontSize="{StaticResource IconSize}"
+                                        Content="{StaticResource IconCopy}" />
+                                <Button Grid.Column="3" Command="{Binding SpeakCommand}" ToolTip.Tip="朗读"
+                                        Background="Transparent" BorderThickness="0" Padding="4,0"
+                                        FontFamily="{StaticResource IconFont}" FontSize="{StaticResource IconSize}"
+                                        Content="{StaticResource IconSpeaker}" />
+                            </Grid>
+                            <TextBlock Text="{Binding ResultText}" TextWrapping="Wrap" FontSize="14"
+                                       IsVisible="{Binding ResultText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" FontSize="12"
+                                       IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
 
-        <!-- 底部：轻提示与错误 -->
-        <StackPanel Grid.Row="5" Margin="0,8,0,0">
-            <Border Background="#1A808080" CornerRadius="4" Padding="10,5"
-                    HorizontalAlignment="Left"
+        <!-- 轻提示与错误 -->
+        <StackPanel Grid.Row="4" Margin="0,6,0,0">
+            <Border Background="#1A808080" CornerRadius="4" Padding="10,5" HorizontalAlignment="Left"
                     IsVisible="{Binding LightMessage, Converter={x:Static ObjectConverters.IsNotNull}}">
                 <TextBlock Text="{Binding LightMessage}" TextWrapping="Wrap" />
             </Border>
             <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap"
                        IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
-            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-                <Button x:Name="CopyButton" Content="复制" Click="OnCopyClick" />
-                <Button Content="朗读" Command="{Binding SpeakCommand}" IsEnabled="{Binding !IsSpeaking}" />
-                <Button Content="＋ 生词本" Command="{Binding SaveVocabCommand}" />
-            </StackPanel>
         </StackPanel>
     </Grid>
 </Window>

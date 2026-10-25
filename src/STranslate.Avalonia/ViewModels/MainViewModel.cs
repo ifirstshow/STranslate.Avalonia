@@ -203,11 +203,16 @@ public partial class MainViewModel : ObservableObject
         AppSettings.Current.Save();
     }
 
+    /// <summary>多服务输出卡片（对齐原版 OutputControl：每启用服务一卡，并发翻译）。</summary>
+    public System.Collections.ObjectModel.ObservableCollection<TranslateOutputItem> OutputItems { get; } = [];
+
+    private CancellationTokenSource? _outputCts;
+
     [RelayCommand]
     private async Task TranslateAsync(CancellationToken cancellationToken)
     {
-        var service = SelectedService?.AsTranslate;
-        if (service is null || string.IsNullOrWhiteSpace(InputText))
+        var services = Services.Where(s => s.AsTranslate is not null).ToList();
+        if (services.Count == 0 || string.IsNullOrWhiteSpace(InputText))
             return;
 
         _cts?.Cancel();
@@ -218,47 +223,106 @@ public partial class MainViewModel : ObservableObject
         ErrorMessage = null;
         ResultText = string.Empty;
 
+        // 重建输出卡片（保持已有服务卡位置，新增/删除服务同步）
+        var existing = OutputItems.ToDictionary(i => i.ServiceId);
+        OutputItems.Clear();
+        foreach (var svc in services)
+        {
+            var item = existing.TryGetValue(svc.Id, out var old)
+                ? old
+                : new TranslateOutputItem { ServiceId = svc.Id, ServiceName = svc.Name, IsExpanded = true };
+            item.ResultText = string.Empty;
+            item.ErrorMessage = null;
+            item.IsProcessing = true;
+            item.RetryHandler = RetryServiceAsync;
+            OutputItems.Add(item);
+        }
+
         try
         {
-            var result = await service.TranslateAsync(
-                new TranslateRequest(InputText, SourceLang, TargetLang),
-                null, token);
-            ResultText = result.Text;
-            if (!result.IsSuccess)
-            {
-                ErrorMessage = result.ErrorMessage;
-                return;
-            }
-
-            // 翻译成功写入历史（失败静默，不影响主流程）
-            try
-            {
-                App.Services.GetRequiredService<HistoryService>().InsertOrUpdate(new HistoryItem
-                {
-                    Time = DateTime.Now,
-                    SourceLang = SourceLang.ToString(),
-                    TargetLang = TargetLang.ToString(),
-                    SourceText = InputText,
-                    ResultText = result.Text
-                });
-            }
-            catch (Exception he)
-            {
-                Program.LogError("History.Write", he);
-            }
+            var tasks = OutputItems.Select(item => TranslateItemAsync(item, token));
+            await Task.WhenAll(tasks);
         }
         catch (OperationCanceledException)
         {
-        }
-        catch (Exception e)
-        {
-            ErrorMessage = e.Message;
         }
         finally
         {
             IsProcessing = false;
         }
     }
+
+    /// <summary>单个服务卡翻译（TranslateAsync 与卡片重试共用）。</summary>
+    private async Task TranslateItemAsync(TranslateOutputItem item, CancellationToken token)
+    {
+        var service = Services.FirstOrDefault(s => s.Id == item.ServiceId)?.AsTranslate;
+        if (service is null)
+            return;
+
+        item.IsProcessing = true;
+        item.ErrorMessage = null;
+        item.ResultText = string.Empty;
+        var start = DateTimeOffset.UtcNow;
+
+        try
+        {
+            var result = await service.TranslateAsync(
+                new TranslateRequest(InputText, SourceLang, TargetLang),
+                null, token);
+            item.ResultText = result.Text;
+            item.ErrorMessage = result.IsSuccess ? null : result.ErrorMessage;
+            item.Duration = DateTimeOffset.UtcNow - start;
+            item.IsExpanded = !string.IsNullOrEmpty(result.Text);
+
+            // 第一个成功结果同步到 ResultText 并写历史（历史/剪贴板监听兼容）
+            if (result.IsSuccess && string.IsNullOrEmpty(ResultText))
+            {
+                ResultText = result.Text;
+                try
+                {
+                    App.Services.GetRequiredService<HistoryService>().InsertOrUpdate(new HistoryItem
+                    {
+                        Time = DateTime.Now,
+                        SourceLang = SourceLang.ToString(),
+                        TargetLang = TargetLang.ToString(),
+                        SourceText = InputText,
+                        ResultText = result.Text
+                    });
+                }
+                catch (Exception he)
+                {
+                    Program.LogError("History.Write", he);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            item.ErrorMessage = e.Message;
+        }
+        finally
+        {
+            item.IsProcessing = false;
+        }
+    }
+
+    /// <summary>输出卡片重试入口。</summary>
+    private async Task RetryServiceAsync(TranslateOutputItem item, CancellationToken token)
+    {
+        try
+        {
+            await TranslateItemAsync(item, token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    /// <summary>供输出卡片朗读调用（TTS 参数化入口）。</summary>
+    public Task SpeakTextPublicAsync(string text) => SpeakTextAsync(text);
 
     /// <summary>触发系统入口：置前主窗、填充文本并自动翻译。</summary>
     public void ShowAndTranslate(string text, bool forceForeground)
@@ -503,7 +567,19 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task SpeakAsync()
     {
-        if (IsSpeaking || string.IsNullOrWhiteSpace(ResultText))
+        await SpeakTextAsync(ResultText);
+    }
+
+    /// <summary>朗读输入文本。</summary>
+    [RelayCommand]
+    private async Task SpeakInputAsync()
+    {
+        await SpeakTextAsync(InputText);
+    }
+
+    private async Task SpeakTextAsync(string text)
+    {
+        if (IsSpeaking || string.IsNullOrWhiteSpace(text))
             return;
         var tts = App.ResolveExtension(s => s.AsTts, null);
         if (tts is null)
@@ -516,7 +592,7 @@ public partial class MainViewModel : ObservableObject
         ErrorMessage = null;
         try
         {
-            var audio = await tts.SpeakAsync(ResultText);
+            var audio = await tts.SpeakAsync(text);
             await Task.Run(() => App.Services.GetRequiredService<HostAudioPlayer>().Play(audio));
         }
         catch (Exception e)
@@ -527,6 +603,24 @@ public partial class MainViewModel : ObservableObject
         {
             IsSpeaking = false;
         }
+    }
+
+    /// <summary>移除译文中的换行符。</summary>
+    [RelayCommand]
+    private void RemoveLineBreaks()
+    {
+        if (string.IsNullOrEmpty(ResultText))
+            return;
+        ResultText = ResultText.Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ');
+    }
+
+    /// <summary>移除译文中的空格。</summary>
+    [RelayCommand]
+    private void RemoveSpaces()
+    {
+        if (string.IsNullOrEmpty(ResultText))
+            return;
+        ResultText = ResultText.Replace(" ", string.Empty);
     }
 
     /// <summary>把源文本加入生词本。</summary>

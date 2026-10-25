@@ -1,4 +1,4 @@
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
@@ -469,5 +469,14 @@ public partial class SettingsWindow : Window
         var element = JsonSerializer.SerializeToElement(toElement(value!));
         _settingsStore.Update(extensionId, itemId, element);
         ExtensionStatusText.Text = "已保存";
+    }
+    private void OnOpenRepoClick(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
+                "https://github.com/ZGGSONG/STranslate") { UseShellExecute = true });
+        }
+        catch { /* 浏览器打开失败不影响主流程 */ }
     }
 }
