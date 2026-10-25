@@ -32,6 +32,7 @@ public partial class SettingsWindow : Window
         ShowDataLocation();
         InitCombos();
         ReloadSpkgList();
+        InitNetworkPage();
         IncKeyBox.Text = _viewModel.IncrementalTranslateKey;
         var b = AppSettings.Current.Backup;
         WebDavAddress.Text = b.Address;
@@ -172,6 +173,47 @@ public partial class SettingsWindow : Window
             : "当前为常规模式；在 exe 旁创建 PortableConfig 文件夹可切换为便携模式";
     }
 
+    // ── 网络代理 ──
+
+    private void InitNetworkPage()
+    {
+        var proxy = AppSettings.Current.Proxy;
+        ProxyEnabledCheck.IsChecked = proxy.IsEnabled;
+        ProxyCustomPanel.IsVisible = proxy.IsEnabled;
+        ProxyEnabledCheck.IsCheckedChanged += (_, _) =>
+        {
+            proxy.IsEnabled = ProxyEnabledCheck.IsChecked == true;
+            ProxyCustomPanel.IsVisible = proxy.IsEnabled;
+            AppSettings.Current.Save();
+            App.Services.GetRequiredService<HttpService>().ReloadProxy();
+            ProxyStatusText.Text = "已生效";
+        };
+        ProxyTypeCombo.SelectedIndex = 0; // v1 仅自定义 HTTP 代理
+        ProxyAddress.Text = proxy.ProxyAddress;
+        ProxyPort.Text = proxy.ProxyPort.ToString();
+    }
+
+    private void SaveProxyFromUi()
+    {
+        var proxy = AppSettings.Current.Proxy;
+        proxy.IsEnabled = ProxyEnabledCheck.IsChecked == true;
+        proxy.ProxyType = ProxyType.Http;
+        proxy.ProxyAddress = ProxyAddress.Text.Trim();
+        _ = int.TryParse(ProxyPort.Text.Trim(), out var port);
+        proxy.ProxyPort = port;
+        AppSettings.Current.Save();
+        App.Services.GetRequiredService<HttpService>().ReloadProxy();
+    }
+
+    private async void OnTestProxyClick(object? sender, RoutedEventArgs e)
+    {
+        SaveProxyFromUi();
+        ProxyStatusText.Text = "测试中…";
+        var http = App.Services.GetRequiredService<HttpService>();
+        var ok = await http.TestProxyAsync();
+        ProxyStatusText.Text = ok ? $"连通（出口 IP: {http.LastTestIp}）" : "连接失败";
+    }
+
     // ── 社区插件（.spkg，ADR-0004 worker 加载）──
 
     private readonly PluginPackageManager _spkgManager = new();
@@ -199,6 +241,7 @@ public partial class SettingsWindow : Window
             ? $"已安装 {file.Name}，重启程序后生效。"
             : "安装失败：" + error;
         ReloadSpkgList();
+        InitNetworkPage();
     }
 
     private void OnUninstallSpkgClick(object? sender, RoutedEventArgs e)
@@ -217,6 +260,7 @@ public partial class SettingsWindow : Window
             ? $"已卸载 {name}，重启程序后生效。"
             : "卸载失败：" + error;
         ReloadSpkgList();
+        InitNetworkPage();
     }
 
     // ── 配置备份：导出/导入 settings.json + extension-settings.json + history.db ──

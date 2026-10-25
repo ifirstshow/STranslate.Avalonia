@@ -65,6 +65,9 @@ public sealed class AppSettings
     /// <summary>被禁用的服务 Id（黑名单式：默认全部启用，对齐原版服务启停）。</summary>
     public List<string> DisabledServiceIds { get; set; } = [];
 
+    // ── 网络 ──
+    public ProxySettings Proxy { get; set; } = new();
+
     // ── 备份 ──
     public BackupSettings Backup { get; set; } = new();
 
@@ -97,6 +100,7 @@ public sealed class AppSettings
             cur.OcrServiceId = fresh.OcrServiceId;
             cur.TranslateServiceId = fresh.TranslateServiceId;
             cur.DisabledServiceIds = fresh.DisabledServiceIds;
+            cur.Proxy = fresh.Proxy;
             cur.Backup = fresh.Backup;
             cur.Hotkeys.OpenWindow = fresh.Hotkeys.OpenWindow;
             cur.Hotkeys.InputTranslate = fresh.Hotkeys.InputTranslate;

@@ -1,5 +1,6 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net;
+using STranslate.Core;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -23,14 +24,43 @@ public sealed class HttpService : IHttpService
         _defaultClient = CreateClient();
     }
 
-    private static HttpClient CreateClient()
+    /// <summary>按当前代理设置构建 handler；系统代理交由 WinHTTP/环境默认，自定义则显式注入。</summary>
+    private static SocketsHttpHandler CreateHandler()
     {
+        var proxy = AppSettings.Current.Proxy;
         var handler = new SocketsHttpHandler
         {
             AutomaticDecompression = DecompressionMethods.All,
             ConnectTimeout = TimeSpan.FromSeconds(15)
         };
-        return new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan }; // 超时交由每请求 CTS 控制
+        if (proxy.IsEnabled && proxy.ProxyType == ProxyType.Http)
+        {
+            var address = $"http://{proxy.ProxyAddress}:{proxy.ProxyPort}";
+            handler.Proxy = new WebProxy(address);
+            if (!string.IsNullOrEmpty(proxy.ProxyUsername))
+                handler.Credentials = new NetworkCredential(proxy.ProxyUsername, proxy.ProxyPassword);
+            if (!proxy.UseProxyForLocalAddresses)
+                handler.UseProxy = true; // BypassList 交给 SocketsHttpHandler 的 Proxy Bypass 需自实现，v1 仅全局开关
+        }
+        else if (proxy.IsEnabled && proxy.ProxyType == ProxyType.System)
+        {
+            handler.Proxy = HttpClient.DefaultProxy; // 系统（WinHTTP）代理
+        }
+        else
+        {
+            handler.UseProxy = false; // 直连
+        }
+        return handler;
+    }
+
+    private static HttpClient CreateClient() => new(CreateHandler()) { Timeout = Timeout.InfiniteTimeSpan };
+
+    /// <summary>代理设置变更后调用：清空命名客户端缓存重建（default 为只读字段，保留旧实例直到重启）。</summary>
+    public void ReloadProxy()
+    {
+        foreach (var kv in _namedClients)
+            kv.Value.Dispose();
+        _namedClients.Clear();
     }
 
     private HttpClient GetClient(Options? options) => _defaultClient;
@@ -364,18 +394,22 @@ public sealed class HttpService : IHttpService
 
     // ── 运维 ──
 
+    /// <summary>最近一次代理测试的出口 IP（失败为 null）。</summary>
+    public string? LastTestIp { get; private set; }
+
     public async Task<bool> TestProxyAsync(CancellationToken cancellationToken = default)
     {
-        // ponytail: M1 无代理配置，直连探测；代理设置落地（integration-network-ops）后补
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(10));
-            await GetAsync("https://api.ipify.org", cancellationToken: cts.Token);
+            var ip = await GetAsync("https://api.ipify.org", cancellationToken: cts.Token);
+            LastTestIp = ip.Trim();
             return true;
         }
         catch
         {
+            LastTestIp = null;
             return false;
         }
     }
