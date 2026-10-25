@@ -21,6 +21,7 @@
             <Button Content="导入图片" Click="OnImportFileClick" />
             <Button Content="保存图片" Click="OnSaveImageClick" />
             <Button Content="复制结果" Click="OnCopyClick" />
+            <Button Content="翻译此文本" Click="OnTranslateClick" FontWeight="SemiBold" />
             <CheckBox Content="标注" IsChecked="{Binding ShowAnnotation}" VerticalAlignment="Center" />
             <ProgressBar IsIndeterminate="True" Width="80" Height="8" VerticalAlignment="Center"
                          IsVisible="{Binding IsProcessing}" />

@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
+using Microsoft.Extensions.DependencyInjection;
 using STranslate.Avalonia.Services;
 using STranslate.Avalonia.Services.Triggers;
 using STranslate.Avalonia.ViewModels;
@@ -80,6 +81,15 @@ public partial class OcrWindow : Window
             Canvas.SetLeft(AnnotationCanvas.Children[^1], rect.Left);
             Canvas.SetTop(AnnotationCanvas.Children[^1], rect.Top);
         }
+    }
+
+    /// <summary>把识别全文送主窗翻译链路（图片翻译完整路径）。</summary>
+    private void OnTranslateClick(object? sender, RoutedEventArgs e)
+    {
+        if (_viewModel.ResultText.Length == 0)
+            return;
+        App.Services.GetRequiredService<MainViewModel>().ShowAndTranslate(_viewModel.ResultText, forceForeground: true);
+        Close();
     }
 
     private void OnCopyClick(object? sender, RoutedEventArgs e)

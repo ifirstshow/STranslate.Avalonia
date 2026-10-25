@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
@@ -21,6 +21,7 @@ public partial class ImageTranslateWindow : Window
     private const double BarHeight = 44; // ponytail: 胶囊实测高（按钮32+内边距），改按钮样式时同步
     private const double Gap = 8;
 
+    private bool _pinned;
     private readonly Action? _onRerun;
     private readonly Action? _onRescreenshot;
     private readonly double _imgW;
@@ -129,6 +130,14 @@ public partial class ImageTranslateWindow : Window
             Spacing = 8,
             HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center
         };
+        var pin = new Button { Content = "📌 钉住", Foreground = Brushes.Black };
+        pin.Click += (_, _) =>
+        {
+            _pinned = true;
+            OverlayCanvas.IsVisible = false;   // 只留截图，不显示译文卡
+            ToolTip.SetTip(pin, "已钉住（Esc 关闭）");
+        };
+        bar.Children.Add(pin);
         if (_onRerun is not null)
         {
             var rerun = new Button { Content = "重新翻译", Foreground = Brushes.Black };
