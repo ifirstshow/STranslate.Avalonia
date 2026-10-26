@@ -1,0 +1,40 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="STranslate.Avalonia.Views.WelcomeWindow"
+        Title="欢迎使用 STranslate.Avalonia" Width="520" MinWidth="440" SizeToContent="Height"
+        WindowStartupLocation="CenterScreen" CanResize="False"
+        Icon="avares://STranslate.Avalonia/Assets/app.ico"
+        FontFamily="Microsoft YaHei UI,Segoe UI">
+    <StackPanel Margin="24" Spacing="16">
+        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+            <Image Source="avares://STranslate.Avalonia/Assets/app.ico" Width="36" Height="36" />
+            <TextBlock Text="欢迎使用 STranslate.Avalonia" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock TextWrapping="Wrap" Opacity="0.8" HorizontalAlignment="Center"
+                   Text="首次运行引导：选择翻译语言与界面主题，完成后即可开始使用。翻译/OCR 服务可在 设置 → 服务 中随时配置。" />
+
+        <Separator />
+
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+            <TextBlock Grid.Column="0" Text="源语言" VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" x:Name="SourceCombo" HorizontalAlignment="Stretch" />
+        </Grid>
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+            <TextBlock Grid.Column="0" Text="目标语言" VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" x:Name="TargetCombo" HorizontalAlignment="Stretch" />
+        </Grid>
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+            <TextBlock Grid.Column="0" Text="界面主题" VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" x:Name="ThemeCombo" HorizontalAlignment="Stretch" SelectedIndex="0">
+                <ComboBoxItem Content="跟随系统" />
+                <ComboBoxItem Content="浅色" />
+                <ComboBoxItem Content="深色" />
+            </ComboBox>
+        </Grid>
+        <CheckBox x:Name="AutoStartCheck" Content="开机自动启动" />
+
+        <Button Content="开始使用" HorizontalAlignment="Stretch" Click="OnFinishClick" FontWeight="SemiBold" />
+        <TextBlock Text="应用常驻系统托盘，可通过全局热键随时唤起（默认 Alt+G）。" Opacity="0.6" FontSize="12"
+                   HorizontalAlignment="Center" />
+    </StackPanel>
+</Window>
