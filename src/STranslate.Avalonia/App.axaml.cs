@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -73,12 +73,10 @@ public partial class App : Application
         var mainWindow = Services.GetRequiredService<MainWindow>();
         desktop.MainWindow = mainWindow;
 
-        // 首次运行（无 settings.json）：先弹向导，完成后保存配置再继续
+        // 首次运行（无 settings.json）：弹向导（非模态——主窗此时不可见，不能作 ShowDialog 的 owner）
         if (!File.Exists(Path.Combine(STranslate.Core.DataLocation.DataDirectory(), "Avalonia", "settings.json")))
         {
-            var welcome = new WelcomeWindow(Services.GetRequiredService<MainViewModel>());
-            welcome.ShowDialog(mainWindow);
-            AppSettings.Current.Save();
+            new WelcomeWindow(Services.GetRequiredService<MainViewModel>()).Show();
         }
 
         SetupTrayIcon();
