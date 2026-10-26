@@ -16,7 +16,7 @@ public sealed class HttpService : IHttpService
 {
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    private readonly HttpClient _defaultClient;
+    private HttpClient _defaultClient;
     private readonly ConcurrentDictionary<string, HttpClient> _namedClients = new();
 
     public HttpService()
@@ -55,12 +55,14 @@ public sealed class HttpService : IHttpService
 
     private static HttpClient CreateClient() => new(CreateHandler()) { Timeout = Timeout.InfiniteTimeSpan };
 
-    /// <summary>代理设置变更后调用：清空命名客户端缓存重建（default 为只读字段，保留旧实例直到重启）。</summary>
+    /// <summary>代理设置变更后调用：重建全部客户端（含默认客户端）。</summary>
     public void ReloadProxy()
     {
         foreach (var kv in _namedClients)
             kv.Value.Dispose();
         _namedClients.Clear();
+        _defaultClient.Dispose();
+        _defaultClient = CreateClient();
     }
 
     private HttpClient GetClient(Options? options) => _defaultClient;
