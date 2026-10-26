@@ -65,6 +65,9 @@ public sealed class AppSettings
     /// <summary>被禁用的服务 Id（黑名单式：默认全部启用，对齐原版服务启停）。</summary>
     public List<string> DisabledServiceIds { get; set; } = [];
 
+    /// <summary>上次已提示更新说明的版本号（空 = 首次安装，不弹）。</summary>
+    public string LastNoticeVersion { get; set; } = string.Empty;
+
     // ── 网络 ──
     public ProxySettings Proxy { get; set; } = new();
 
@@ -100,6 +103,7 @@ public sealed class AppSettings
             cur.OcrServiceId = fresh.OcrServiceId;
             cur.TranslateServiceId = fresh.TranslateServiceId;
             cur.DisabledServiceIds = fresh.DisabledServiceIds;
+            cur.LastNoticeVersion = fresh.LastNoticeVersion;
             cur.Proxy = fresh.Proxy;
             cur.Backup = fresh.Backup;
             cur.Hotkeys.OpenWindow = fresh.Hotkeys.OpenWindow;

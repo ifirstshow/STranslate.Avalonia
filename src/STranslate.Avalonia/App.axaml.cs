@@ -81,6 +81,16 @@ public partial class App : Application
 
         SetupTrayIcon();
 
+        // 更新完成提示：版本变化且非首装时弹出（对齐原版 UpdateChangelogDialog 的简化版）
+        var version = typeof(App).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+        if (!string.IsNullOrEmpty(AppSettings.Current.LastNoticeVersion)
+            && AppSettings.Current.LastNoticeVersion != version)
+        {
+            Dispatcher.UIThread.Post(() => new Views.UpdatedWindow(version).Show());
+        }
+        AppSettings.Current.LastNoticeVersion = version;
+        AppSettings.Current.Save();
+
         // 触发系统按降级矩阵仅 Windows 启用（M2：Alt+G/Alt+A/Alt+D，Ctrl+C+C 与鼠标划词默认关、主窗开关控制）
         if (OperatingSystem.IsWindows())
         {
