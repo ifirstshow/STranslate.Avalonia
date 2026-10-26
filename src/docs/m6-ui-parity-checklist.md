@@ -42,7 +42,7 @@
 
 | 项 | 说明 | 状态 |
 | --- | --- | --- |
-| 首次向导 WelcomeSetupWindow | 三配置缺失时引导 | ❌ 缺（此前推迟） |
+| 首次向导 WelcomeSetupWindow | 首启引导（语言对/主题/自启） | ✅ 2026-10-26 简化版向导（settings.json 缺失时首启弹出） |
 | UpdateChangelogDialog | 更新完成后展示新变更 | ❌ 缺 |
 | LLM Prompt 编辑器 | PromptListSetting 的编辑 UI（PromptEditWindow） | ❌ 缺（SDK 已有契约） |
 | 词典扩展 | ICiba 词典结构化渲染（IDictionaryPlugin 宿主 UI） | ❌ 缺（SDK 已有契约） |
