@@ -23,6 +23,44 @@ public partial class TranslateOutputItem : ObservableObject
     public string DurationText => $"{Duration.TotalSeconds:0.0}s";
     [ObservableProperty] private bool _isExpanded;
 
+    /// <summary>词典查询结果（非空 = 词典卡：渲染音标/释义/变位，忽略 ResultText 文本块）。</summary>
+    public STranslate.Sdk.DictionaryResult? Dictionary { get; set; }
+    public bool IsDictionary => Dictionary is not null;
+    public bool HasSymbols => Dictionary?.Symbols.Count > 0;
+
+    /// <summary>变位汇总文本（复数/过去式/…），空 = 无变位信息。</summary>
+    public string ExchangesText
+    {
+        get
+        {
+            var d = Dictionary;
+            if (d is null)
+                return string.Empty;
+            var parts = new List<string>();
+            void Add(string label, List<string> values)
+            {
+                if (values.Count > 0)
+                    parts.Add($"{label} {string.Join("、", values)}");
+            }
+            Add("复数:", d.Plurals);
+            Add("过去式:", d.PastTense);
+            Add("过去分词:", d.PastParticiple);
+            Add("现在分词:", d.PresentParticiple);
+            Add("第三人称单数:", d.ThirdPersonSingular);
+            Add("比较级:", d.Comparative);
+            Add("最高级:", d.Superlative);
+            return string.Join("  ", parts);
+        }
+    }
+
+    /// <summary>Dictionary 赋值后调用：通知词典相关绑定。</summary>
+    public void RefreshDictionaryNotifiers()
+    {
+        OnPropertyChanged(nameof(IsDictionary));
+        OnPropertyChanged(nameof(HasSymbols));
+        OnPropertyChanged(nameof(ExchangesText));
+    }
+
     partial void OnDurationChanged(TimeSpan value)
     {
         OnPropertyChanged(nameof(HasDuration));

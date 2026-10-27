@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using STranslate.Sdk;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -121,6 +121,24 @@ public partial class MainWindow : Window
         // 双击结果区 = 复制
         if (DataContext is MainViewModel { ResultText.Length: > 0 })
             OnCopyClick(this, e);
+    }
+
+    /// <summary>词典发音：下载 AudioUrl 交宿主播放器。</summary>
+    private async void OnPhoneticTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is not Control { DataContext: STranslate.Sdk.Symbol { AudioUrl.Length: > 0 } symbol })
+            return;
+        try
+        {
+            using var http = new System.Net.Http.HttpClient();
+            var bytes = await http.GetByteArrayAsync(symbol.AudioUrl);
+            App.Services.GetRequiredService<HostAudioPlayer>()
+                .Play(new STranslate.Sdk.AudioData(bytes, STranslate.Sdk.AudioFormat.Auto));
+        }
+        catch (Exception ex)
+        {
+            Program.LogError("PhoneticPlay", ex);
+        }
     }
 
     private async void OnCopyInputClick(object? sender, RoutedEventArgs e)

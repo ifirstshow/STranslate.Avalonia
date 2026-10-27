@@ -129,6 +129,43 @@
                                         FontFamily="{StaticResource IconFont}" FontSize="{StaticResource IconSize}"
                                         Content="{StaticResource IconSpeaker}" />
                             </Grid>
+                            <!-- 词典内容：音标行 + 释义 + 变位 -->
+                            <StackPanel Spacing="6" IsVisible="{Binding IsDictionary}">
+                                <StackPanel Orientation="Horizontal" Spacing="10"
+                                            IsVisible="{Binding HasSymbols}">
+                                    <TextBlock Text="{Binding Dictionary.Text}" FontWeight="SemiBold" FontSize="16" VerticalAlignment="Center" />
+                                    <ItemsControl ItemsSource="{Binding Dictionary.Symbols}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="8" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Label}" FontSize="11" Opacity="0.6" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{Binding Phonetic}" FontSize="13" VerticalAlignment="Center" />
+                                                    <TextBlock Text="🔊" FontSize="11" VerticalAlignment="Center"
+                                                               IsVisible="{Binding AudioUrl, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                                <ItemsControl ItemsSource="{Binding Dictionary.DictMeans}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,1">
+                                                <TextBlock Text="{Binding PartOfSpeech}" FontSize="12" Opacity="0.6" MinWidth="34" VerticalAlignment="Top" />
+                                                <TextBlock Text="{Binding MeansText}" TextWrapping="Wrap" FontSize="13" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="{Binding ExchangesText}" FontSize="11" Opacity="0.6" TextWrapping="Wrap"
+                                           IsVisible="{Binding ExchangesText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            </StackPanel>
+                            <!-- 普通翻译文本 -->
                             <TextBlock Text="{Binding ResultText}" TextWrapping="Wrap" FontSize="14"
                                        IsVisible="{Binding ResultText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" FontSize="12"

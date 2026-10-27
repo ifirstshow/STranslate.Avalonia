@@ -18,6 +18,7 @@ public sealed class ExtensionService
     public IOcrPlugin? AsOcr => Plugin as IOcrPlugin;
     public ITtsPlugin? AsTts => Plugin as ITtsPlugin;
     public IVocabularyPlugin? AsVocabulary => Plugin as IVocabularyPlugin;
+    public IDictionaryPlugin? AsDictionary => Plugin as IDictionaryPlugin;
 
     public override string ToString() => Name;
 }

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace STranslate.Sdk;
 
 /// <summary>
@@ -100,4 +102,8 @@ public sealed class DictMean
 
     /// <summary>释义列表。</summary>
     public List<string> Means { get; set; } = [];
+
+    /// <summary>释义合并文本（UI 渲染用）。</summary>
+    [JsonIgnore]
+    public string MeansText => string.Join("；", Means);
 }

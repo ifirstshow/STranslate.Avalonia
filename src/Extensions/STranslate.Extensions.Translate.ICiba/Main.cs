@@ -1,23 +1,16 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using STranslate.Sdk;
 
 namespace STranslate.Extensions.Translate.ICiba;
 
-/// <summary>爱词吧（ICiba）词典翻译。批量翻译接口失败时回退词页 __NEXT_DATA__ 解析（移植自 WPF 版）。</summary>
+/// <summary>爱词吧词典（IDictionaryPlugin）：词页结构化解析（音标/发音/释义/变位），对齐 WPF 原版。</summary>
 [Extension(
     "c2f14ac80a1e4b8f9d3a77e6c5b04f21",
     "ICiba",
-    Description = "爱词吧词典翻译（单词/短句）",
+    Description = "爱词吧词典（单词查询）",
     Author = "zggsong")]
-public sealed class Main : ITranslatePlugin
+public sealed class Main : IDictionaryPlugin
 {
-    private const string TranslateUrl = "https://dictionary.iciba.com/dictionary/fy/batch";
-    private const string TranslatePath = "/dictionary/fy/batch";
-    private const string TranslateClient = "6";
-    private const string TranslateKey = "1000006";
-    private const string TranslateSignatureSalt = "7ece94d9f9c202b0d2ec557dg4r9bc";
     private const string WordPageUrl = "https://www.iciba.com/word";
     private const string NextDataStartTag = "<script id=\"__NEXT_DATA__\" type=\"application/json\">";
     private const string ScriptEndTag = "</script>";
@@ -30,491 +23,120 @@ public sealed class Main : ITranslatePlugin
 
     public void Dispose() { }
 
-    public string? GetSourceLanguage(LangEnum lang) => lang switch
+    public async Task<DictionaryResult> TranslateAsync(string content, CancellationToken cancellationToken = default)
     {
-        LangEnum.Auto => "auto",
-        LangEnum.ChineseSimplified => "zh",
-        LangEnum.ChineseTraditional => "zh",
-        LangEnum.Cantonese => "zh",
-        LangEnum.English => "en",
-        LangEnum.Japanese => "ja",
-        LangEnum.Korean => "ko",
-        LangEnum.French => "fr",
-        LangEnum.Spanish => "es",
-        LangEnum.Russian => "ru",
-        LangEnum.German => "de",
-        LangEnum.Italian => "it",
-        LangEnum.Turkish => "tr",
-        LangEnum.PortuguesePortugal => "pt",
-        LangEnum.PortugueseBrazil => "pt",
-        LangEnum.Vietnamese => "vi",
-        LangEnum.Indonesian => "id",
-        LangEnum.Thai => "th",
-        LangEnum.Malay => "ms",
-        LangEnum.Arabic => "ar",
-        LangEnum.Hindi => "hi",
-        LangEnum.MongolianCyrillic => "mn",
-        LangEnum.MongolianTraditional => "mn",
-        LangEnum.Khmer => "km",
-        LangEnum.NorwegianBokmal => "no",
-        LangEnum.NorwegianNynorsk => "no",
-        LangEnum.Persian => "fa",
-        LangEnum.Swedish => "sv",
-        LangEnum.Polish => "pl",
-        LangEnum.Dutch => "nl",
-        LangEnum.Ukrainian => "uk",
-        LangEnum.Uzbek => "auto",
-        LangEnum.Uyghur => "ug",
-        _ => "auto"
-    };
-
-    public string? GetTargetLanguage(LangEnum lang) => lang == LangEnum.Uzbek ? "uz" : GetSourceLanguage(lang);
-
-    public async Task<TranslateResult> TranslateAsync(TranslateRequest request, IProgress<string>? deltas = null, CancellationToken cancellationToken = default)
-    {
-        var start = DateTimeOffset.UtcNow;
-
-        if (GetSourceLanguage(request.SourceLang) is not string sourceStr)
-            return TranslateResult.Fail(Context.I18n.GetTranslation("UnsupportedSourceLang"), DateTimeOffset.UtcNow - start);
-        if (GetTargetLanguage(request.TargetLang) is not string targetStr)
-            return TranslateResult.Fail(Context.I18n.GetTranslation("UnsupportedTargetLang"), DateTimeOffset.UtcNow - start);
-
-        var content = request.Text.Trim();
+        var result = new DictionaryResult();
+        content = content.Trim();
         if (string.IsNullOrWhiteSpace(content))
-            return TranslateResult.Fail("No result.", DateTimeOffset.UtcNow - start);
-
-        var translatedText = await TranslateWithBatchApiAsync(content, sourceStr, targetStr, cancellationToken);
-        if (string.IsNullOrWhiteSpace(translatedText))
-            translatedText = await TranslateWithWordPageAsync(content, cancellationToken);
-
-        return string.IsNullOrWhiteSpace(translatedText)
-            ? TranslateResult.Fail("No result.", DateTimeOffset.UtcNow - start)
-            : TranslateResult.Ok(translatedText, DateTimeOffset.UtcNow - start);
-    }
-
-    private async Task<string> TranslateWithBatchApiAsync(
-        string content, string sourceStr, string targetStr, CancellationToken cancellationToken)
-    {
-        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-        var queryParams = new Dictionary<string, string>
         {
-            { "client", TranslateClient },
-            { "key", TranslateKey },
-            { "timestamp", timestamp }
-        };
-        queryParams["signature"] = CreateSignature(TranslatePath, queryParams);
-
-        var option = new Options
-        {
-            QueryParams = queryParams,
-            Headers = new Dictionary<string, string>
-            {
-                { "Origin", "https://www.iciba.com" },
-                { "Referer", "https://www.iciba.com/" },
-                { "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36" }
-            }
-        };
-
-        var payload = new
-        {
-            from = NormalizeTranslateLanguage(sourceStr),
-            to = NormalizeTranslateLanguage(targetStr),
-            textList = new[] { content }
-        };
-
-        var response = await Context.Http.PostAsync(TranslateUrl, payload, option, cancellationToken);
-        if (string.IsNullOrWhiteSpace(response))
-            return string.Empty;
-
-        try
-        {
-            using var jsonDoc = JsonDocument.Parse(response);
-            var root = jsonDoc.RootElement;
-
-            if (!root.TryGetProperty("code", out var code) ||
-                !IsSuccessCode(code) ||
-                !root.TryGetProperty("data", out var data) ||
-                data.ValueKind != JsonValueKind.Array)
-            {
-                return string.Empty;
-            }
-
-            var translatedLines = new List<string>();
-            foreach (var item in data.EnumerateArray())
-            {
-                if (item.ValueKind == JsonValueKind.String)
-                {
-                    AddIfNotEmpty(item.GetString(), translatedLines);
-                    continue;
-                }
-
-                if (item.ValueKind == JsonValueKind.Object &&
-                    item.TryGetProperty("out", out var outText) &&
-                    outText.ValueKind == JsonValueKind.String)
-                {
-                    AddIfNotEmpty(outText.GetString(), translatedLines);
-                }
-            }
-
-            return string.Join(Environment.NewLine, translatedLines);
+            result.ResultType = DictionaryResultType.NoResult;
+            return result;
         }
-        catch (JsonException)
-        {
-            return string.Empty;
-        }
-    }
-
-    private async Task<string> TranslateWithWordPageAsync(string content, CancellationToken cancellationToken)
-    {
-        var lookupContent = NormalizeLookupContent(content);
-        if (string.IsNullOrWhiteSpace(lookupContent))
-            return string.Empty;
 
         var option = new Options
         {
             QueryParams = new Dictionary<string, string>
             {
-                { "w", lookupContent.ToLowerInvariant() }
-            },
-            Headers = new Dictionary<string, string>
-            {
-                { "Referer", "https://www.iciba.com/" },
-                { "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36" }
+                { "w", content.ToLowerInvariant() }
             }
         };
 
         var response = await Context.Http.GetAsync(WordPageUrl, option, cancellationToken);
         var nextDataJson = ExtractNextDataJson(response);
         if (string.IsNullOrWhiteSpace(nextDataJson))
-            return string.Empty;
-
-        try
         {
-            using var jsonDoc = JsonDocument.Parse(nextDataJson);
-            if (!TryGetWordBaseInfo(jsonDoc.RootElement, out var root) ||
-                !IsExpectedWord(root, lookupContent))
+            result.ResultType = DictionaryResultType.NoResult;
+            return result;
+        }
+
+        using var jsonDoc = JsonDocument.Parse(nextDataJson);
+        if (!TryGetWordBaseInfo(jsonDoc.RootElement, out var root) || !IsExpectedWord(root, content))
+        {
+            result.ResultType = DictionaryResultType.NoResult;
+            return result;
+        }
+
+        result.Text = root.TryGetProperty("word_name", out var wn) ? wn.GetString() ?? content : content;
+        result.ResultType = DictionaryResultType.Success;
+
+        if (root.TryGetProperty("symbols", out var symbols) &&
+            symbols.ValueKind == JsonValueKind.Array &&
+            symbols.GetArrayLength() > 0)
+        {
+            ProcessSymbols(symbols[0], result);
+        }
+
+        ProcessWordExchange(root, result);
+        return result;
+    }
+
+    // ── 音标与释义 ──
+
+    private static void ProcessSymbols(JsonElement firstSymbol, DictionaryResult result)
+    {
+        var isChinese = firstSymbol.TryGetProperty("word_symbol", out _);
+
+        if (isChinese)
+        {
+            // 中文：拼音 + symbol_mp3
+            if (firstSymbol.TryGetProperty("word_symbol", out var phZh))
             {
-                return string.Empty;
+                result.Symbols.Add(new Symbol
+                {
+                    Label = "zh",
+                    Phonetic = phZh.GetString() ?? string.Empty,
+                    AudioUrl = firstSymbol.TryGetProperty("symbol_mp3", out var mp3)
+                        ? mp3.GetString() ?? string.Empty
+                        : string.Empty
+                });
             }
-
-            return ExtractPlainTranslation(root);
         }
-        catch (JsonException)
+        else
         {
-            return string.Empty;
-        }
-    }
-
-    private static string NormalizeTranslateLanguage(string language) => language switch
-    {
-        "zh-tw" => "cht",
-        _ => language
-    };
-
-    private static string CreateSignature(string path, Dictionary<string, string> parameters)
-    {
-        var values = parameters
-            .Where(item => item.Key != "signature")
-            .OrderBy(item => item.Key, StringComparer.Ordinal)
-            .Select(item => item.Value);
-        var raw = $"{path}{string.Concat(values)}{TranslateSignatureSalt}";
-        var hash = MD5.HashData(Encoding.UTF8.GetBytes(raw));
-        return Convert.ToHexString(hash).ToLowerInvariant();
-    }
-
-    private static bool IsSuccessCode(JsonElement code)
-    {
-        return code.ValueKind switch
-        {
-            JsonValueKind.Number => code.TryGetInt32(out var value) && value == 1,
-            JsonValueKind.String => code.GetString() == "1",
-            _ => false
-        };
-    }
-
-    private static string? ExtractNextDataJson(string response)
-    {
-        var trimmedResponse = response.TrimStart();
-        if (trimmedResponse.StartsWith('{'))
-            return trimmedResponse;
-
-        var startIndex = response.IndexOf(NextDataStartTag, StringComparison.OrdinalIgnoreCase);
-        if (startIndex < 0)
-            return null;
-
-        startIndex += NextDataStartTag.Length;
-        var endIndex = response.IndexOf(ScriptEndTag, startIndex, StringComparison.OrdinalIgnoreCase);
-        if (endIndex <= startIndex)
-            return null;
-
-        return response[startIndex..endIndex];
-    }
-
-    private static bool TryGetWordBaseInfo(JsonElement root, out JsonElement baseInfo)
-    {
-        baseInfo = default;
-
-        if (TryGetWordInfo(root, out var wordInfo))
-        {
-            if (wordInfo.TryGetProperty("baesInfo", out baseInfo))
-                return true;
-
-            if (LooksLikeBaseInfo(wordInfo))
+            // 英式/美式音标 + 发音
+            if (firstSymbol.TryGetProperty("ph_en", out var phEn) && !string.IsNullOrEmpty(phEn.GetString()))
             {
-                baseInfo = wordInfo;
-                return true;
+                result.Symbols.Add(new Symbol
+                {
+                    Label = "uk",
+                    Phonetic = phEn.GetString() ?? string.Empty,
+                    AudioUrl = GetFirstString(firstSymbol, "ph_en_mp3", "ph_tts_mp3")
+                });
+            }
+            if (firstSymbol.TryGetProperty("ph_am", out var phAm) && !string.IsNullOrEmpty(phAm.GetString()))
+            {
+                result.Symbols.Add(new Symbol
+                {
+                    Label = "us",
+                    Phonetic = phAm.GetString() ?? string.Empty,
+                    AudioUrl = GetFirstString(firstSymbol, "ph_am_mp3", "ph_tts_mp3")
+                });
             }
         }
 
-        if (TryFindWordInfo(root, out wordInfo))
+        // 词性 + 释义
+        if (firstSymbol.TryGetProperty("parts", out var parts) && parts.ValueKind == JsonValueKind.Array)
         {
-            if (wordInfo.TryGetProperty("baesInfo", out baseInfo))
-                return true;
-
-            if (LooksLikeBaseInfo(wordInfo))
-            {
-                baseInfo = wordInfo;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool TryGetWordInfo(JsonElement root, out JsonElement wordInfo)
-    {
-        wordInfo = default;
-
-        if (root.TryGetProperty("props", out var props) &&
-            props.TryGetProperty("pageProps", out var pagePropsFromProps))
-        {
-            return TryGetWordInfoFromPageProps(pagePropsFromProps, out wordInfo);
-        }
-
-        if (root.TryGetProperty("pageProps", out var pageProps))
-        {
-            return TryGetWordInfoFromPageProps(pageProps, out wordInfo);
-        }
-
-        return false;
-    }
-
-    private static bool TryGetWordInfoFromPageProps(JsonElement pageProps, out JsonElement wordInfo)
-    {
-        wordInfo = default;
-
-        return pageProps.TryGetProperty("initialReduxState", out var initialReduxState) &&
-               initialReduxState.TryGetProperty("word", out var wordState) &&
-               wordState.TryGetProperty("wordInfo", out wordInfo);
-    }
-
-    private static bool TryFindWordInfo(JsonElement element, out JsonElement wordInfo)
-    {
-        wordInfo = default;
-
-        switch (element.ValueKind)
-        {
-            case JsonValueKind.Object:
-                if (element.TryGetProperty("wordInfo", out var directWordInfo) &&
-                    LooksLikeWordInfo(directWordInfo))
-                {
-                    wordInfo = directWordInfo;
-                    return true;
-                }
-
-                if (LooksLikeWordInfo(element))
-                {
-                    wordInfo = element;
-                    return true;
-                }
-
-                foreach (var property in element.EnumerateObject())
-                {
-                    if (TryFindWordInfo(property.Value, out wordInfo))
-                        return true;
-                }
-                break;
-
-            case JsonValueKind.Array:
-                foreach (var item in element.EnumerateArray())
-                {
-                    if (TryFindWordInfo(item, out wordInfo))
-                        return true;
-                }
-                break;
-        }
-
-        return false;
-    }
-
-    private static bool LooksLikeWordInfo(JsonElement element)
-    {
-        return element.ValueKind == JsonValueKind.Object &&
-               (element.TryGetProperty("baesInfo", out _) || LooksLikeBaseInfo(element));
-    }
-
-    private static bool LooksLikeBaseInfo(JsonElement element)
-    {
-        return element.ValueKind == JsonValueKind.Object &&
-               (element.TryGetProperty("word_name", out _) ||
-                element.TryGetProperty("symbols", out _));
-    }
-
-    private static bool IsExpectedWord(JsonElement root, string lookupContent)
-    {
-        if (!root.TryGetProperty("word_name", out var wordName) ||
-            wordName.GetString() is not string word ||
-            string.IsNullOrWhiteSpace(word))
-        {
-            return false;
-        }
-
-        var normalizedWord = NormalizeForCompare(word);
-        var normalizedLookup = NormalizeForCompare(lookupContent);
-        if (normalizedWord == normalizedLookup)
-            return true;
-
-        if (!root.TryGetProperty("exchange", out var exchange))
-            return false;
-
-        var forms = new List<string>();
-        AddExchangeForms(exchange, forms);
-        return forms.Select(NormalizeForCompare).Any(item => item == normalizedLookup);
-    }
-
-    private static void AddExchangeForms(JsonElement element, ICollection<string> values)
-    {
-        switch (element.ValueKind)
-        {
-            case JsonValueKind.String:
-                AddIfNotEmpty(element.GetString(), values);
-                break;
-
-            case JsonValueKind.Array:
-                foreach (var item in element.EnumerateArray())
-                {
-                    AddExchangeForms(item, values);
-                }
-                break;
-
-            case JsonValueKind.Object:
-                foreach (var property in element.EnumerateObject())
-                {
-                    AddExchangeForms(property.Value, values);
-                }
-                break;
-        }
-    }
-
-    private static string NormalizeLookupContent(string content)
-    {
-        var value = content.Trim().Replace('’', '\'');
-        while (value.Length > 0 && IsLookupTrimChar(value[0]))
-            value = value[1..].TrimStart();
-        while (value.Length > 0 && IsLookupTrimChar(value[^1]))
-            value = value[..^1].TrimEnd();
-        return value;
-    }
-
-    private static bool IsLookupTrimChar(char ch)
-    {
-        return char.IsWhiteSpace(ch) || char.IsPunctuation(ch) || char.IsSymbol(ch);
-    }
-
-    private static string NormalizeForCompare(string value)
-    {
-        return new string(NormalizeLookupContent(value)
-            .ToLowerInvariant()
-            .Where(ch => char.IsLetterOrDigit(ch) || ch is '\'' or '-' || IsCjk(ch))
-            .ToArray());
-    }
-
-    private static bool IsCjk(char ch)
-    {
-        return ch is >= '一' and <= '鿿';
-    }
-
-    private static string ExtractPlainTranslation(JsonElement baseInfo)
-    {
-        if (!baseInfo.TryGetProperty("symbols", out var symbols) ||
-            symbols.ValueKind != JsonValueKind.Array)
-        {
-            return string.Empty;
-        }
-
-        var candidates = new List<string>();
-        foreach (var symbol in symbols.EnumerateArray())
-        {
-            if (!symbol.TryGetProperty("parts", out var parts) ||
-                parts.ValueKind != JsonValueKind.Array)
-            {
-                continue;
-            }
-
             foreach (var part in parts.EnumerateArray())
             {
+                var partOfSpeech =
+                    part.TryGetProperty("part", out var p) ? p.GetString() :
+                    part.TryGetProperty("part_name", out var pn) ? pn.GetString() : null;
+
                 if (!part.TryGetProperty("means", out var means))
                     continue;
 
-                candidates.AddRange(ExtractMeanStrings(means));
+                var meanValues = ExtractMeanStrings(means);
+                if (meanValues.Count == 0)
+                    continue;
+
+                result.DictMeans.Add(new DictMean
+                {
+                    PartOfSpeech = partOfSpeech ?? "释义",
+                    Means = meanValues
+                });
             }
         }
-
-        return PickBestPlainTranslation(candidates);
-    }
-
-    private static string PickBestPlainTranslation(IEnumerable<string> candidates)
-    {
-        return candidates
-            .SelectMany(SplitMeanCandidate)
-            .Select(NormalizePlainTranslation)
-            .Where(item => !string.IsNullOrWhiteSpace(item))
-            .Distinct()
-            .OrderBy(GetPlainTranslationScore)
-            .ThenBy(item => item.Length)
-            .FirstOrDefault() ?? string.Empty;
-    }
-
-    private static IEnumerable<string> SplitMeanCandidate(string candidate)
-    {
-        return candidate.Split([';', '；', ',', '，', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-    }
-
-    private static string NormalizePlainTranslation(string text)
-    {
-        var value = text.Trim();
-        if (value == "他/她/它们")
-            return "他们";
-        if (value.Contains("雷电交加", StringComparison.Ordinal) && value.Contains("暴风雨", StringComparison.Ordinal))
-            return "雷暴";
-        if (value == "大雷雨")
-            return "雷暴";
-
-        return value;
-    }
-
-    private static int GetPlainTranslationScore(string text)
-    {
-        var score = text.Length;
-
-        if (text.Contains('的'))
-            score += 30;
-        if (text.Any(char.IsWhiteSpace) || text.Any(IsDictionaryPunctuation))
-            score += 10;
-        if (IsShortChinesePhrase(text))
-            score -= 5;
-
-        return score;
-    }
-
-    private static bool IsDictionaryPunctuation(char ch)
-    {
-        return ch is '；' or ';' or ',' or '，' or '（' or '）' or '(' or ')' or '[' or ']';
-    }
-
-    private static bool IsShortChinesePhrase(string text)
-    {
-        return text.Length is >= 2 and <= 4 && text.All(ch => ch >= '一' && ch <= '鿿');
     }
 
     private static List<string> ExtractMeanStrings(JsonElement element)
@@ -531,34 +153,219 @@ public sealed class Main : ITranslatePlugin
             case JsonValueKind.String:
                 AddIfNotEmpty(element.GetString(), values);
                 break;
-
             case JsonValueKind.Array:
                 foreach (var item in element.EnumerateArray())
-                {
                     AddMeanStrings(item, values);
-                }
                 break;
-
             case JsonValueKind.Object:
                 if (element.TryGetProperty("word_mean", out var wordMean))
-                {
                     AddMeanStrings(wordMean, values);
-                }
                 else if (element.TryGetProperty("means", out var means))
-                {
                     AddMeanStrings(means, values);
-                }
                 else if (element.TryGetProperty("mean", out var mean))
-                {
                     AddMeanStrings(mean, values);
-                }
                 break;
         }
     }
+
+    // ── 词形变换 ──
+
+    private static void ProcessWordExchange(JsonElement root, DictionaryResult result)
+    {
+        if (!root.TryGetProperty("exchange", out var exchange))
+            return;
+
+        if (exchange.TryGetProperty("word_pl", out var pl)) AddWordForms(pl, result.Plurals);
+        if (exchange.TryGetProperty("word_past", out var past)) AddWordForms(past, result.PastTense);
+        if (exchange.TryGetProperty("word_done", out var done)) AddWordForms(done, result.PastParticiple);
+        if (exchange.TryGetProperty("word_ing", out var ing)) AddWordForms(ing, result.PresentParticiple);
+        if (exchange.TryGetProperty("word_third", out var third)) AddWordForms(third, result.ThirdPersonSingular);
+        if (exchange.TryGetProperty("word_er", out var er)) AddWordForms(er, result.Comparative);
+        if (exchange.TryGetProperty("word_est", out var est)) AddWordForms(est, result.Superlative);
+    }
+
+    private static void AddWordForms(JsonElement element, ICollection<string> collection)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.String:
+                AddIfNotEmpty(element.GetString(), collection);
+                break;
+            case JsonValueKind.Array:
+                foreach (var item in element.EnumerateArray())
+                    AddWordForms(item, collection);
+                break;
+        }
+    }
+
+    // ── 词页定位（__NEXT_DATA__ 深度查找，移植自 WPF 原版）──
+
+    private static string? ExtractNextDataJson(string response)
+    {
+        var trimmed = response.TrimStart();
+        if (trimmed.StartsWith('{'))
+            return trimmed;
+
+        var startIndex = response.IndexOf(NextDataStartTag, StringComparison.OrdinalIgnoreCase);
+        if (startIndex < 0)
+            return null;
+        startIndex += NextDataStartTag.Length;
+        var endIndex = response.IndexOf(ScriptEndTag, startIndex, StringComparison.OrdinalIgnoreCase);
+        return endIndex <= startIndex ? null : response[startIndex..endIndex];
+    }
+
+    private static bool TryGetWordBaseInfo(JsonElement root, out JsonElement baseInfo)
+    {
+        baseInfo = default;
+        if (TryGetWordInfo(root, out var wordInfo))
+        {
+            if (wordInfo.TryGetProperty("baesInfo", out baseInfo))
+                return true;
+            if (LooksLikeBaseInfo(wordInfo))
+            {
+                baseInfo = wordInfo;
+                return true;
+            }
+        }
+        if (TryFindWordInfo(root, out wordInfo))
+        {
+            if (wordInfo.TryGetProperty("baesInfo", out baseInfo))
+                return true;
+            if (LooksLikeBaseInfo(wordInfo))
+            {
+                baseInfo = wordInfo;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static bool TryGetWordInfo(JsonElement root, out JsonElement wordInfo)
+    {
+        wordInfo = default;
+        if (root.TryGetProperty("props", out var props) &&
+            props.TryGetProperty("pageProps", out var pagePropsFromProps))
+            return TryGetWordInfoFromPageProps(pagePropsFromProps, out wordInfo);
+        if (root.TryGetProperty("pageProps", out var pageProps))
+            return TryGetWordInfoFromPageProps(pageProps, out wordInfo);
+        return false;
+    }
+
+    private static bool TryGetWordInfoFromPageProps(JsonElement pageProps, out JsonElement wordInfo)
+    {
+        wordInfo = default;
+        return pageProps.TryGetProperty("initialReduxState", out var redux) &&
+               redux.TryGetProperty("word", out var wordState) &&
+               wordState.TryGetProperty("wordInfo", out wordInfo);
+    }
+
+    private static bool TryFindWordInfo(JsonElement element, out JsonElement wordInfo)
+    {
+        wordInfo = default;
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+                if (element.TryGetProperty("wordInfo", out var direct) && LooksLikeWordInfo(direct))
+                {
+                    wordInfo = direct;
+                    return true;
+                }
+                if (LooksLikeWordInfo(element))
+                {
+                    wordInfo = element;
+                    return true;
+                }
+                foreach (var property in element.EnumerateObject())
+                    if (TryFindWordInfo(property.Value, out wordInfo))
+                        return true;
+                break;
+            case JsonValueKind.Array:
+                foreach (var item in element.EnumerateArray())
+                    if (TryFindWordInfo(item, out wordInfo))
+                        return true;
+                break;
+        }
+        return false;
+    }
+
+    private static bool LooksLikeWordInfo(JsonElement element) =>
+        element.ValueKind == JsonValueKind.Object &&
+        (element.TryGetProperty("baesInfo", out _) || LooksLikeBaseInfo(element));
+
+    private static bool LooksLikeBaseInfo(JsonElement element) =>
+        element.ValueKind == JsonValueKind.Object &&
+        (element.TryGetProperty("word_name", out _) || element.TryGetProperty("symbols", out _));
+
+    /// <summary>校验返回的单词与输入一致（iciba 识别失败会重定向到默认页）。</summary>
+    private static bool IsExpectedWord(JsonElement root, string lookupContent)
+    {
+        if (!root.TryGetProperty("word_name", out var wordName) ||
+            wordName.GetString() is not string word ||
+            string.IsNullOrWhiteSpace(word))
+            return false;
+
+        if (NormalizeForCompare(word) == NormalizeForCompare(lookupContent))
+            return true;
+
+        if (!root.TryGetProperty("exchange", out var exchange))
+            return false;
+
+        var forms = new List<string>();
+        AddExchangeForms(exchange, forms);
+        return forms.Select(NormalizeForCompare).Any(item => item == NormalizeForCompare(lookupContent));
+    }
+
+    private static void AddExchangeForms(JsonElement element, ICollection<string> values)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.String:
+                AddIfNotEmpty(element.GetString(), values);
+                break;
+            case JsonValueKind.Array:
+                foreach (var item in element.EnumerateArray())
+                    AddExchangeForms(item, values);
+                break;
+            case JsonValueKind.Object:
+                foreach (var property in element.EnumerateObject())
+                    AddExchangeForms(property.Value, values);
+                break;
+        }
+    }
+
+    private static string NormalizeLookupContent(string content)
+    {
+        var value = content.Trim().Replace('’', '\'');
+        while (value.Length > 0 && IsLookupTrimChar(value[0]))
+            value = value[1..].TrimStart();
+        while (value.Length > 0 && IsLookupTrimChar(value[^1]))
+            value = value[..^1].TrimEnd();
+        return value;
+    }
+
+    private static bool IsLookupTrimChar(char ch) =>
+        char.IsWhiteSpace(ch) || char.IsPunctuation(ch) || char.IsSymbol(ch);
+
+    private static string NormalizeForCompare(string value) =>
+        new string(NormalizeLookupContent(value)
+            .ToLowerInvariant()
+            .Where(ch => char.IsLetterOrDigit(ch) || ch is '\'' or '-' || (ch >= '一' && ch <= '鿿'))
+            .ToArray());
 
     private static void AddIfNotEmpty(string? value, ICollection<string> values)
     {
         if (!string.IsNullOrWhiteSpace(value))
             values.Add(value.Trim());
+    }
+
+    private static string? GetFirstString(JsonElement element, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (element.TryGetProperty(name, out var value) &&
+                value.GetString() is { } s && !string.IsNullOrWhiteSpace(s))
+                return s;
+        }
+        return null;
     }
 }

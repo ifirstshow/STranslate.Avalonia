@@ -215,6 +215,7 @@ public partial class MainViewModel : ObservableObject
     private async Task TranslateAsync(CancellationToken cancellationToken)
     {
         var services = Services.Where(s => s.AsTranslate is not null && s.IsEnabled).ToList();
+        var dictionaryServices = Services.Where(s => s.AsDictionary is not null && s.IsEnabled && IsDictionaryQuery(InputText)).ToList();
         if (services.Count == 0 || string.IsNullOrWhiteSpace(InputText))
             return;
 
@@ -238,12 +239,16 @@ public partial class MainViewModel : ObservableObject
             item.ErrorMessage = null;
             item.IsProcessing = true;
             item.RetryHandler = RetryServiceAsync;
+            if (dictionaryServices.Any(d => d.Id == svc.Id))
+                item.Dictionary = new STranslate.Sdk.DictionaryResult();
             OutputItems.Add(item);
         }
 
         try
         {
-            var tasks = OutputItems.Select(item => TranslateItemAsync(item, token));
+            var tasks = OutputItems.Select(item => item.IsDictionary
+                ? TranslateDictionaryItemAsync(item, token)
+                : TranslateItemAsync(item, token));
             await Task.WhenAll(tasks);
         }
         catch (OperationCanceledException)
@@ -312,12 +317,60 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>单词判定：无内部空白且长度合理（词典查询触发条件）。</summary>
+    private static bool IsDictionaryQuery(string text)
+    {
+        var t = text.Trim();
+        return t.Length > 0 && t.Length <= 40 && !t.Contains(' ');
+    }
+
+    /// <summary>词典卡查询（IDictionaryPlugin 结构化结果）。</summary>
+    private async Task TranslateDictionaryItemAsync(TranslateOutputItem item, CancellationToken token)
+    {
+        var plugin = Services.FirstOrDefault(s => s.Id == item.ServiceId)?.AsDictionary;
+        if (plugin is null)
+            return;
+
+        item.IsProcessing = true;
+        item.ErrorMessage = null;
+        var start = DateTimeOffset.UtcNow;
+
+        try
+        {
+            var result = await plugin.TranslateAsync(InputText.Trim(), token);
+            item.Duration = DateTimeOffset.UtcNow - start;
+            item.ErrorMessage = result.ResultType == DictionaryResultType.Success ? null
+                : result.ResultType == DictionaryResultType.NoResult ? "未查询到该词" : (result.Text ?? "查询失败");
+            if (result.ResultType == DictionaryResultType.Success)
+            {
+                item.Dictionary = result;
+                item.RefreshDictionaryNotifiers();
+                item.IsExpanded = true;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            item.ErrorMessage = e.Message;
+        }
+        finally
+        {
+            item.IsProcessing = false;
+        }
+    }
+
     /// <summary>输出卡片重试入口。</summary>
     private async Task RetryServiceAsync(TranslateOutputItem item, CancellationToken token)
     {
         try
         {
-            await TranslateItemAsync(item, token);
+            if (item.IsDictionary)
+                await TranslateDictionaryItemAsync(item, token);
+            else
+                await TranslateItemAsync(item, token);
         }
         catch (OperationCanceledException)
         {
