@@ -10,7 +10,7 @@
 | 输入区工具行 | 生词/朗读/复制/去换行/去空格 | ✅ 2026-10-25 卡片化+工具行（识别语种检测随语言检测服务后续） |
 | 输出区操作行 | 复制/朗读/生词 | ✅ 2026-10-25 卡片化（Prompt 切换随 Prompt 编辑器后续） |
 | 语言交换与选择 | 图标按钮 + 输出目标多选（OutputControl 多目标输出） | ⏳ 现为两下拉 |
-| 词典视图 | 查单词时内嵌词典结果（音标/发音/释义/变位/例句） | ❌ 缺（依赖 IDictionaryPlugin 渲染） |
+| 词典视图 | 查单词时内嵌词典结果（音标/发音/释义/变位/例句） | ✅ 2026-10-26 ICiba 转为 IDictionaryPlugin（结构化音标+发音播放+释义+变位；句子查询时该卡提示未查询到） |
 | 服务快捷切换 | ServiceSwitcherPopup 弹层切换翻译服务 | ✅ 2026-10-25 标题行按钮+Flyout |
 | 置顶/主题/紧凑模式 | HeaderControl 图标组 + 紧凑尺寸记忆 | ⏳ 置顶/主题有，紧凑记忆缺 |
 | Snackbar | 底部自动消失提示（SnackbarContainer） | ⏳ 已有简版轻提示 |
@@ -45,7 +45,7 @@
 | 首次向导 WelcomeSetupWindow | 首启引导（语言对/主题/自启） | ✅ 2026-10-26 简化版向导（settings.json 缺失时首启弹出） |
 | UpdateChangelogDialog | 更新完成后展示新变更 | ✅ 2026-10-26 简化版（版本变化首启弹窗+Release 入口） |
 | LLM Prompt 编辑器 | PromptListSetting 的编辑 UI（PromptEditWindow） | ❌ 缺（SDK 已有契约） |
-| 词典扩展 | ICiba 词典结构化渲染（IDictionaryPlugin 宿主 UI） | ❌ 缺（SDK 已有契约） |
+| 词典扩展 | ICiba 词典结构化渲染 | ✅ 2026-10-26 同上（例句提取待后续） |
 | 更多扩展迁移 | DeepL/百度/有道/腾讯… | ❌ 按需 |
 | WebDav 对话框 | WebDavContentDialog 表单化 | ⏳ 现为平铺输入框 |
 
