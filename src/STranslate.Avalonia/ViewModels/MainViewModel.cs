@@ -214,8 +214,14 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task TranslateAsync(CancellationToken cancellationToken)
     {
-        var services = Services.Where(s => s.AsTranslate is not null && s.IsEnabled).ToList();
-        var dictionaryServices = Services.Where(s => s.AsDictionary is not null && s.IsEnabled && IsDictionaryQuery(InputText)).ToList();
+        // 翻译服务 ∪ 词典服务（词典卡仅在单词查询时出现）
+        var dictionaryServices = IsDictionaryQuery(InputText)
+            ? Services.Where(s => s.AsDictionary is not null && s.IsEnabled).ToList()
+            : [];
+        var services = Services
+            .Where(s => s.IsEnabled && (s.AsTranslate is not null || s.AsDictionary is not null))
+            .DistinctBy(s => s.Id)
+            .ToList();
         if (services.Count == 0 || string.IsNullOrWhiteSpace(InputText))
             return;
 
