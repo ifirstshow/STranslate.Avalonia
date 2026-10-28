@@ -30,10 +30,7 @@ public partial class OcrWindow : Window
                 DrawAnnotation();
         };
         PreviewImage.SizeChanged += (_, _) => DrawAnnotation();
-        ZoomHost.RenderTransform = new global::Avalonia.Media.Transformation.TransformGroup
-        {
-            Children = { _zoomScale, _zoomTranslate }
-        };
+        ZoomHost.RenderTransform = new global::Avalonia.Media.MatrixTransform(Matrix.Identity);
     }
 
     /// <summary>载入截图并执行识别。窗口不持有截图之外的资源。</summary>
@@ -99,11 +96,14 @@ public partial class OcrWindow : Window
     // ── 图片缩放与平移（Ctrl+滚轮 / 拖拽 / 双击复位）──
 
     private double _zoom = 1;
+    private double _offsetX, _offsetY;
     private Point _dragStart;
     private double _startX, _startY;
     private bool _dragging;
-    private readonly ScaleTransform _zoomScale = new();
-    private readonly TranslateTransform _zoomTranslate = new();
+
+    private void ApplyTransform() =>
+        ZoomHost.RenderTransform = new global::Avalonia.Media.MatrixTransform(
+            new global::Avalonia.Media.Matrix(_zoom, 0, 0, _zoom, _offsetX, _offsetY));
 
     // ctor 内挂接：ZoomHost.RenderTransform = new TransformGroup { _zoomScale, _zoomTranslate }
 
@@ -111,15 +111,14 @@ public partial class OcrWindow : Window
     {
         var delta = e.Delta.Y > 0 ? 1.1 : 1 / 1.1;
         var newZoom = Math.Clamp(_zoom * delta, 0.2, 8);
-        var panel = PreviewPanel;
         var pos = e.GetPosition(ZoomHost);
 
         // 围绕指针位置缩放
-        var scale = newZoom / _zoom;
-        _zoomTranslate.X = pos.X - (pos.X - _zoomTranslate.X) * scale;
-        _zoomTranslate.Y = pos.Y - (pos.Y - _zoomTranslate.Y) * scale;
-        _zoomScale.ScaleX = _zoomScale.ScaleY = newZoom;
+        var ratio = newZoom / _zoom;
+        _offsetX = pos.X - (pos.X - _offsetX) * ratio;
+        _offsetY = pos.Y - (pos.Y - _offsetY) * ratio;
         _zoom = newZoom;
+        ApplyTransform();
         e.Handled = true;
     }
 
@@ -129,8 +128,8 @@ public partial class OcrWindow : Window
         {
             _dragging = true;
             _dragStart = e.GetPosition(PreviewPanel);
-            _startX = _zoomTranslate.X;
-            _startY = _zoomTranslate.Y;
+            _startX = _offsetX;
+            _startY = _offsetY;
         }
     }
 
@@ -139,16 +138,17 @@ public partial class OcrWindow : Window
         if (!_dragging)
             return;
         var pos = e.GetPosition(PreviewPanel);
-        _zoomTranslate.X = _startX + (pos.X - _dragStart.X);
-        _zoomTranslate.Y = _startY + (pos.Y - _dragStart.Y);
+        _offsetX = _startX + (pos.X - _dragStart.X);
+        _offsetY = _startY + (pos.Y - _dragStart.Y);
+        ApplyTransform();
     }
 
     private void OnPreviewReset(object? sender, RoutedEventArgs e)
     {
         _zoom = 1;
+        _offsetX = _offsetY = 0;
         _dragging = false;
-        _zoomScale.ScaleX = _zoomScale.ScaleY = 1;
-        _zoomTranslate.X = _zoomTranslate.Y = 0;
+        ApplyTransform();
     }
 
     private void OnCopyClick(object? sender, RoutedEventArgs e)
