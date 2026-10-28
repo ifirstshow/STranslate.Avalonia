@@ -103,7 +103,7 @@ public partial class OcrWindow : Window
 
     private void ApplyTransform() =>
         ZoomHost.RenderTransform = new global::Avalonia.Media.MatrixTransform(
-            new global::Avalonia.Media.Matrix(_zoom, 0, 0, _zoom, _offsetX, _offsetY));
+            new global::Avalonia.Matrix(_zoom, 0, 0, _zoom, _offsetX, _offsetY));
 
     // ctor 内挂接：ZoomHost.RenderTransform = new TransformGroup { _zoomScale, _zoomTranslate }
 
