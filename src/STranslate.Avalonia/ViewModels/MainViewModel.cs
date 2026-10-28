@@ -352,6 +352,14 @@ public partial class MainViewModel : ObservableObject
                 item.Dictionary = result;
                 item.RefreshDictionaryNotifiers();
                 item.IsExpanded = true;
+                // 复制/朗读的数据源（对齐原版：词头+音标+释义全文）
+                var phonetics = string.Join("  ", result.Symbols
+                    .Where(s => !string.IsNullOrEmpty(s.Phonetic))
+                    .Select(s => $"{s.Label} [{s.Phonetic}]"));
+                item.ResultText = string.Join(Environment.NewLine,
+                    new[] { result.Text, phonetics }
+                    .Concat(result.DictMeans.Select(m => $"{m.PartOfSpeech} {m.MeansText}"))
+                    .Where(x => !string.IsNullOrWhiteSpace(x)));
             }
         }
         catch (OperationCanceledException)

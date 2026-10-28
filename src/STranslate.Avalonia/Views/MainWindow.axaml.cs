@@ -130,10 +130,15 @@ public partial class MainWindow : Window
             return;
         try
         {
+            // iciba 返回协议相对地址（//dict-pk...），补全 https
+            var url = symbol.AudioUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                ? symbol.AudioUrl
+                : "https:" + symbol.AudioUrl;
             using var http = new System.Net.Http.HttpClient();
-            var bytes = await http.GetByteArrayAsync(symbol.AudioUrl);
-            App.Services.GetRequiredService<HostAudioPlayer>()
-                .Play(new STranslate.Sdk.AudioData(bytes, STranslate.Sdk.AudioFormat.Auto));
+            var bytes = await http.GetByteArrayAsync(url);
+            // 播放阻塞至结束，放后台避免卡 UI
+            _ = Task.Run(() => App.Services.GetRequiredService<HostAudioPlayer>()
+                .Play(new STranslate.Sdk.AudioData(bytes, STranslate.Sdk.AudioFormat.Auto)));
         }
         catch (Exception ex)
         {
