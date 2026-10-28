@@ -148,7 +148,7 @@ public partial class OcrWindow : Window
         _zoom = 1;
         _dragging = false;
         _zoomScale.ScaleX = _zoomScale.ScaleY = 1;
-        ZoomTranslate.X = ZoomTranslate.Y = 0;
+        _zoomTranslate.X = _zoomTranslate.Y = 0;
     }
 
     private void OnCopyClick(object? sender, RoutedEventArgs e)
