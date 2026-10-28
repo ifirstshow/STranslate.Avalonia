@@ -30,7 +30,6 @@ public partial class OcrWindow : Window
                 DrawAnnotation();
         };
         PreviewImage.SizeChanged += (_, _) => DrawAnnotation();
-        ZoomHost.RenderTransform = new global::Avalonia.Media.MatrixTransform(Matrix.Identity);
     }
 
     /// <summary>载入截图并执行识别。窗口不持有截图之外的资源。</summary>
@@ -38,6 +37,22 @@ public partial class OcrWindow : Window
     {
         using var stream = new MemoryStream(png);
         PreviewImage.Source = new Bitmap(stream);
+
+        // 基准显示尺寸：适配图片区视口（宽优先，超高则按高适配）
+        var viewportW = PreviewScroll.Viewport.Width > 16 ? PreviewScroll.Viewport.Width : 800;
+        var viewportH = 340;
+        _zoom = 1;
+        var ratio = (double)pixelWidth / Math.Max(1, pixelHeight);
+        _baseW = Math.Min(viewportW - 16, Math.Min(pixelWidth, viewportH * ratio));
+        _baseH = _baseW / ratio;
+        if (_baseH > viewportH)
+        {
+            _baseH = viewportH;
+            _baseW = _baseH * ratio;
+        }
+        ApplyZoom(1);
+        PreviewScroll.Offset = new Vector(0, 0);
+
         await _viewModel.RecognizeAsync(png, pixelWidth, pixelHeight, ocr, sourceLang);
     }
 
@@ -48,25 +63,16 @@ public partial class OcrWindow : Window
         base.OnKeyDown(e);
     }
 
-    /// <summary>
-    /// 标注换算：Avalonia Image（Uniform）的 Bounds 就是内容适配后的矩形（非容器），
-    /// Canvas 设为同尺寸并居中对齐 Image，框坐标只乘一个缩放比即可。
-    /// </summary>
+    /// <summary>标注：Canvas 与 Image 同原点同尺寸，框坐标乘显示缩放比即可。</summary>
     private void DrawAnnotation()
     {
         AnnotationCanvas.Children.Clear();
         if (!_viewModel.ShowAnnotation || _viewModel.OcrBoxes.Count == 0 || PreviewImage.Source is not Bitmap source)
             return;
-        if (PreviewImage.Bounds.Width < 1 || PreviewImage.Bounds.Height < 1)
+        if (PreviewImage.Width < 1 || PreviewImage.Height < 1)
             return;
 
-        var dipW = source.Size.Width;
-        var scale = PreviewImage.Bounds.Width / dipW;
-
-        AnnotationCanvas.Width = PreviewImage.Bounds.Width;
-        AnnotationCanvas.Height = PreviewImage.Bounds.Height;
-        AnnotationCanvas.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
-        AnnotationCanvas.VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center;
+        var scale = PreviewImage.Width / source.Size.Width;
 
         foreach (var box in _viewModel.OcrBoxes)
         {
@@ -93,66 +99,47 @@ public partial class OcrWindow : Window
         Close();
     }
 
-    // ── 图片缩放与平移（Ctrl+滚轮 / 拖拽 / 双击复位）──
+    // ── 图片缩放与平移（布局式：改 Image 尺寸 + ScrollViewer 锚定滚动）──
 
     private double _zoom = 1;
-    private double _offsetX, _offsetY;
-    private Point _dragStart;
-    private double _startX, _startY;
-    private bool _dragging;
+    private double _baseW;   // zoom=1 时的显示宽（适配视口）
+    private double _baseH;
 
-    private void ApplyTransform() =>
-        ZoomHost.RenderTransform = new global::Avalonia.Media.MatrixTransform(
-            new global::Avalonia.Matrix(_zoom, 0, 0, _zoom, _offsetX, _offsetY));
-
-    // ctor 内挂接：ZoomHost.RenderTransform = new TransformGroup { _zoomScale, _zoomTranslate }
+    private void ApplyZoom(double zoom)
+    {
+        PreviewImage.Width = _baseW * zoom;
+        PreviewImage.Height = _baseH * zoom;
+        AnnotationCanvas.Width = PreviewImage.Width;
+        AnnotationCanvas.Height = PreviewImage.Height;
+    }
 
     private void OnPreviewWheel(object? sender, PointerWheelEventArgs e)
     {
+        if (_baseW <= 0)
+            return;
         var delta = e.Delta.Y > 0 ? 1.25 : 1 / 1.25;
         var newZoom = Math.Clamp(_zoom * delta, 0.2, 20);
-        // 锚定必须用未变换的面板坐标系（ZoomHost 坐标已被当前缩放影响）
-        var pos = e.GetPosition(PreviewPanel);
 
-        // 围绕指针位置缩放
+        // 锚定：指针（相对内容原点）下的内容点在缩放后保持在同一视口位置
+        var scroll = PreviewScroll;
+        var pos = e.GetPosition(scroll);
+        var off = scroll.Offset;
         var ratio = newZoom / _zoom;
-        var oldX = _offsetX; var oldY = _offsetY;
-        _offsetX = pos.X - (pos.X - _offsetX) * ratio;
-        _offsetY = pos.Y - (pos.Y - _offsetY) * ratio;
+        var margin = 8; // ZoomHost Margin
+        var contentX = pos.X + off.X - margin;
+        var contentY = pos.Y + off.Y - margin;
+
         _zoom = newZoom;
-        ApplyTransform();
-        var applied = ((global::Avalonia.Media.MatrixTransform)ZoomHost.RenderTransform);
-        DebugTrace.Log($"zoom: pos=({pos.X:F0},{pos.Y:F0}) zoom {_zoom / ratio:F2}->{_zoom:F2} off ({oldX:F0},{oldY:F0})->({_offsetX:F0},{_offsetY:F0}) applied=M{applied.Matrix} hostBounds=({ZoomHost.Bounds.Width:F0}x{ZoomHost.Bounds.Height:F0}) panelBounds=({PreviewPanel.Bounds.Width:F0}x{PreviewPanel.Bounds.Height:F0})");
+        ApplyZoom(newZoom);
+        scroll.Offset = new Vector(contentX * ratio - (pos.X - margin), contentY * ratio - (pos.Y - margin));
         e.Handled = true;
-    }
-
-    private void OnPreviewPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed && _zoom > 1)
-        {
-            _dragging = true;
-            _dragStart = e.GetPosition(PreviewPanel);
-            _startX = _offsetX;
-            _startY = _offsetY;
-        }
-    }
-
-    private void OnPreviewMoved(object? sender, PointerEventArgs e)
-    {
-        if (!_dragging)
-            return;
-        var pos = e.GetPosition(PreviewPanel);
-        _offsetX = _startX + (pos.X - _dragStart.X);
-        _offsetY = _startY + (pos.Y - _dragStart.Y);
-        ApplyTransform();
     }
 
     private void OnPreviewReset(object? sender, RoutedEventArgs e)
     {
         _zoom = 1;
-        _offsetX = _offsetY = 0;
-        _dragging = false;
-        ApplyTransform();
+        ApplyZoom(1);
+        PreviewScroll.Offset = new Vector(0, 0);
     }
 
     private void OnCopyClick(object? sender, RoutedEventArgs e)
@@ -225,6 +212,18 @@ public partial class OcrWindow : Window
             using var stream = new MemoryStream(bytes);
             var bitmap = new Bitmap(stream);
             PreviewImage.Source = bitmap;
+            var viewportW = PreviewScroll.Viewport.Width > 16 ? PreviewScroll.Viewport.Width : 800;
+            _zoom = 1;
+            var r = (double)bitmap.PixelSize.Width / Math.Max(1, bitmap.PixelSize.Height);
+            _baseW = Math.Min(viewportW - 16, Math.Min(bitmap.PixelSize.Width, 340 * r));
+            _baseH = _baseW / r;
+            if (_baseH > 340)
+            {
+                _baseH = 340;
+                _baseW = _baseH * r;
+            }
+            ApplyZoom(1);
+            PreviewScroll.Offset = new Vector(0, 0);
             await _viewModel.RecognizeAsync(bytes, bitmap.PixelSize.Width, bitmap.PixelSize.Height,
                 _viewModel.Ocr, _viewModel.SourceLang);
         }

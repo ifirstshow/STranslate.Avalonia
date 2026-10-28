@@ -5,7 +5,7 @@
         Title="OCR" Width="900" Height="560" MinWidth="640" MinHeight="400"
         WindowStartupLocation="CenterScreen"
         Icon="avares://STranslate.Avalonia/Assets/app.ico">
-    <Grid RowDefinitions="Auto,Auto,*" Margin="12" RowSpacing="8">
+    <Grid RowDefinitions="Auto,Auto,*,2*" Margin="12" RowSpacing="8">
         <Border Grid.Row="0" Background="#1A808080" CornerRadius="4" Padding="10,5"
                 IsVisible="{Binding HasQrCode}">
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -28,25 +28,22 @@
             <TextBlock Text="{Binding ErrorMessage}" Foreground="Red"
                        IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
         </StackPanel>
-        <Grid Grid.Row="2" ColumnDefinitions="*,2*" ColumnSpacing="8">
-            <Border Grid.Column="0" BorderBrush="#33808080" BorderThickness="1">
-                <Panel x:Name="PreviewPanel" ClipToBounds="True"
-                       Background="Transparent"
-                       PointerWheelChanged="OnPreviewWheel"
-                       PointerPressed="OnPreviewPressed"
-                       PointerMoved="OnPreviewMoved"
-                       DoubleTapped="OnPreviewReset">
-                    <TextBlock Text="等待截图…（Ctrl+滚轮缩放，拖拽平移，双击复位）" TextWrapping="Wrap" Padding="10,0" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5" />
-                    <Panel x:Name="ZoomHost">
-                        <Image x:Name="PreviewImage" Stretch="Uniform"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        <Canvas x:Name="AnnotationCanvas" IsHitTestVisible="False"
-                                HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Panel>
-                </Panel>
-            </Border>
-            <TextBox Grid.Column="1" x:Name="ResultTextBox" Text="{Binding ResultText}" IsReadOnly="True"
-                     TextWrapping="Wrap" FontSize="14" />
-        </Grid>
+        <!-- 图片区：全宽，Ctrl+滚轮缩放 / 拖拽平移 / 双击复位（ScrollViewer 承载布局式缩放） -->
+        <ScrollViewer Grid.Row="2" x:Name="PreviewScroll" ClipToBounds="True"
+                      HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"
+                      Background="#22808080"
+                      PointerWheelChanged="OnPreviewWheel"
+                      DoubleTapped="OnPreviewReset">
+            <Panel x:Name="ZoomHost" Margin="8">
+                <TextBlock Text="等待截图…（Ctrl+滚轮缩放，双击复位）" HorizontalAlignment="Center"
+                           VerticalAlignment="Center" Opacity="0.5" />
+                <Image x:Name="PreviewImage" Stretch="Fill" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <Canvas x:Name="AnnotationCanvas" IsHitTestVisible="False"
+                        HorizontalAlignment="Left" VerticalAlignment="Top" />
+            </Panel>
+        </ScrollViewer>
+        <!-- 识别文本：全宽 -->
+        <TextBox Grid.Row="3" x:Name="ResultTextBox" Text="{Binding ResultText}" IsReadOnly="True"
+                 TextWrapping="Wrap" FontSize="14" AcceptsReturn="True" />
     </Grid>
 </Window>
