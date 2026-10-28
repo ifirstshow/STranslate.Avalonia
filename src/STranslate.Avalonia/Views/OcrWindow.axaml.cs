@@ -30,7 +30,7 @@ public partial class OcrWindow : Window
                 DrawAnnotation();
         };
         PreviewImage.SizeChanged += (_, _) => DrawAnnotation();
-        ZoomHost.RenderTransform = new Avalonia.Media.Transformation.TransformGroup
+        ZoomHost.RenderTransform = new global::Avalonia.Media.Transformation.TransformGroup
         {
             Children = { _zoomScale, _zoomTranslate }
         };
