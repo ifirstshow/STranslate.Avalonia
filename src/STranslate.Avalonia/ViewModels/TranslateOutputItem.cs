@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
@@ -24,7 +24,9 @@ public partial class TranslateOutputItem : ObservableObject
     [ObservableProperty] private bool _isExpanded;
 
     /// <summary>词典查询结果（非空 = 词典卡：渲染音标/释义/变位，忽略 ResultText 文本块）。</summary>
-    public STranslate.Sdk.DictionaryResult? Dictionary { get; set; }
+    [ObservableProperty]
+    private STranslate.Sdk.DictionaryResult? _dictionary;
+
     public bool IsDictionary => Dictionary is not null;
     public bool HasSymbols => Dictionary?.Symbols.Count > 0;
 

@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\Plugins\STranslate.Plugin.Translate.OpenAI\STranslate.Plugin.Translate.OpenAI.csproj" />
     <ProjectReference Include="..\..\STranslate.Avalonia\STranslate.Avalonia.csproj" />
     <ProjectReference Include="..\..\Extensions\STranslate.Extensions.Translate.MTranServer\STranslate.Extensions.Translate.MTranServer.csproj" />
+    <ProjectReference Include="..\..\Extensions\STranslate.Extensions.Translate.ICiba\STranslate.Extensions.Translate.ICiba.csproj" />
   </ItemGroup>
 
   <ItemGroup>
