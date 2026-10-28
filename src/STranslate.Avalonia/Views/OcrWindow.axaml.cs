@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
@@ -116,10 +116,12 @@ public partial class OcrWindow : Window
 
         // 围绕指针位置缩放
         var ratio = newZoom / _zoom;
+        var oldX = _offsetX; var oldY = _offsetY;
         _offsetX = pos.X - (pos.X - _offsetX) * ratio;
         _offsetY = pos.Y - (pos.Y - _offsetY) * ratio;
         _zoom = newZoom;
         ApplyTransform();
+        DebugTrace.Log($"zoom: pos=({pos.X:F0},{pos.Y:F0}) zoom {_zoom / ratio:F2}->{_zoom:F2} off ({oldX:F0},{oldY:F0})->({_offsetX:F0},{_offsetY:F0})");
         e.Handled = true;
     }
 
