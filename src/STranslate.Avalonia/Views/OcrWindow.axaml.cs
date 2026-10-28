@@ -121,7 +121,8 @@ public partial class OcrWindow : Window
         _offsetY = pos.Y - (pos.Y - _offsetY) * ratio;
         _zoom = newZoom;
         ApplyTransform();
-        DebugTrace.Log($"zoom: pos=({pos.X:F0},{pos.Y:F0}) zoom {_zoom / ratio:F2}->{_zoom:F2} off ({oldX:F0},{oldY:F0})->({_offsetX:F0},{_offsetY:F0})");
+        var applied = (Avalonia.Media.MatrixTransform)ZoomHost.RenderTransform;
+        DebugTrace.Log($"zoom: pos=({pos.X:F0},{pos.Y:F0}) zoom {_zoom / ratio:F2}->{_zoom:F2} off ({oldX:F0},{oldY:F0})->({_offsetX:F0},{_offsetY:F0}) applied=M{applied.Matrix.Value} hostBounds=({ZoomHost.Bounds.Width:F0}x{ZoomHost.Bounds.Height:F0}) panelBounds=({PreviewPanel.Bounds.Width:F0}x{PreviewPanel.Bounds.Height:F0})");
         e.Handled = true;
     }
 
