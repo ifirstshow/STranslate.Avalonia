@@ -36,7 +36,7 @@
                        PointerPressed="OnPreviewPressed"
                        PointerMoved="OnPreviewMoved"
                        DoubleTapped="OnPreviewReset">
-                    <TextBlock Text="等待截图…（Ctrl+滚轮缩放，拖拽平移，双击复位）" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5" />
+                    <TextBlock Text="等待截图…（Ctrl+滚轮缩放，拖拽平移，双击复位）" TextWrapping="Wrap" Padding="10,0" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5" />
                     <Panel x:Name="ZoomHost">
                         <Image x:Name="PreviewImage" Stretch="Uniform"
                                HorizontalAlignment="Center" VerticalAlignment="Center" />

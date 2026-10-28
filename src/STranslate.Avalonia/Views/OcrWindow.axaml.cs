@@ -109,8 +109,8 @@ public partial class OcrWindow : Window
 
     private void OnPreviewWheel(object? sender, PointerWheelEventArgs e)
     {
-        var delta = e.Delta.Y > 0 ? 1.1 : 1 / 1.1;
-        var newZoom = Math.Clamp(_zoom * delta, 0.2, 8);
+        var delta = e.Delta.Y > 0 ? 1.25 : 1 / 1.25;
+        var newZoom = Math.Clamp(_zoom * delta, 0.2, 20);
         // 锚定必须用未变换的面板坐标系（ZoomHost 坐标已被当前缩放影响）
         var pos = e.GetPosition(PreviewPanel);
 
