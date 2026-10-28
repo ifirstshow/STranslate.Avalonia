@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
@@ -111,7 +111,8 @@ public partial class OcrWindow : Window
     {
         var delta = e.Delta.Y > 0 ? 1.1 : 1 / 1.1;
         var newZoom = Math.Clamp(_zoom * delta, 0.2, 8);
-        var pos = e.GetPosition(ZoomHost);
+        // 锚定必须用未变换的面板坐标系（ZoomHost 坐标已被当前缩放影响）
+        var pos = e.GetPosition(PreviewPanel);
 
         // 围绕指针位置缩放
         var ratio = newZoom / _zoom;
