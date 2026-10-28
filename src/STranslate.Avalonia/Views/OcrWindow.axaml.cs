@@ -30,6 +30,10 @@ public partial class OcrWindow : Window
                 DrawAnnotation();
         };
         PreviewImage.SizeChanged += (_, _) => DrawAnnotation();
+        ZoomHost.RenderTransform = new Avalonia.Media.Transformation.TransformGroup
+        {
+            Children = { _zoomScale, _zoomTranslate }
+        };
     }
 
     /// <summary>载入截图并执行识别。窗口不持有截图之外的资源。</summary>
@@ -90,6 +94,61 @@ public partial class OcrWindow : Window
             return;
         App.Services.GetRequiredService<MainViewModel>().ShowAndTranslate(_viewModel.ResultText, forceForeground: true);
         Close();
+    }
+
+    // ── 图片缩放与平移（Ctrl+滚轮 / 拖拽 / 双击复位）──
+
+    private double _zoom = 1;
+    private Point _dragStart;
+    private double _startX, _startY;
+    private bool _dragging;
+    private readonly ScaleTransform _zoomScale = new();
+    private readonly TranslateTransform _zoomTranslate = new();
+
+    // ctor 内挂接：ZoomHost.RenderTransform = new TransformGroup { _zoomScale, _zoomTranslate }
+
+    private void OnPreviewWheel(object? sender, PointerWheelEventArgs e)
+    {
+        var delta = e.Delta.Y > 0 ? 1.1 : 1 / 1.1;
+        var newZoom = Math.Clamp(_zoom * delta, 0.2, 8);
+        var panel = PreviewPanel;
+        var pos = e.GetPosition(ZoomHost);
+
+        // 围绕指针位置缩放
+        var scale = newZoom / _zoom;
+        _zoomTranslate.X = pos.X - (pos.X - _zoomTranslate.X) * scale;
+        _zoomTranslate.Y = pos.Y - (pos.Y - _zoomTranslate.Y) * scale;
+        _zoomScale.ScaleX = _zoomScale.ScaleY = newZoom;
+        _zoom = newZoom;
+        e.Handled = true;
+    }
+
+    private void OnPreviewPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed && _zoom > 1)
+        {
+            _dragging = true;
+            _dragStart = e.GetPosition(PreviewPanel);
+            _startX = _zoomTranslate.X;
+            _startY = _zoomTranslate.Y;
+        }
+    }
+
+    private void OnPreviewMoved(object? sender, PointerEventArgs e)
+    {
+        if (!_dragging)
+            return;
+        var pos = e.GetPosition(PreviewPanel);
+        _zoomTranslate.X = _startX + (pos.X - _dragStart.X);
+        _zoomTranslate.Y = _startY + (pos.Y - _dragStart.Y);
+    }
+
+    private void OnPreviewReset(object? sender, RoutedEventArgs e)
+    {
+        _zoom = 1;
+        _dragging = false;
+        _zoomScale.ScaleX = _zoomScale.ScaleY = 1;
+        ZoomTranslate.X = ZoomTranslate.Y = 0;
     }
 
     private void OnCopyClick(object? sender, RoutedEventArgs e)
