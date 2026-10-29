@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
@@ -131,6 +131,8 @@ public partial class OcrWindow : Window
 
         _zoom = newZoom;
         ApplyZoom(newZoom);
+        // 先同步执行布局让 ScrollViewer 的 Extent 更新为新尺寸，否则 Offset 会被按旧范围钳制
+        scroll.UpdateLayout();
         scroll.Offset = new Vector(contentX * ratio - (pos.X - margin), contentY * ratio - (pos.Y - margin));
         e.Handled = true;
     }
