@@ -191,7 +191,7 @@ public partial class SettingsWindow : Window
         // 修饰键单独按下不算完成
         if (e.Key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt
             or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin
-            or Key.LeftSuper or Key.RightSuper)
+           )
             return;
 
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
