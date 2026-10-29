@@ -34,6 +34,7 @@ public partial class SettingsWindow : Window
         InitCombos();
         ReloadSpkgList();
         InitNetworkPage();
+        RefreshAllFromVm();
         IncKeyBox.Text = _viewModel.IncrementalTranslateKey;
         var b = AppSettings.Current.Backup;
         WebDavAddress.Text = b.Address;
