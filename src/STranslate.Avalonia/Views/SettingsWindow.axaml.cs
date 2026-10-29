@@ -174,6 +174,16 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private void OnHotkeyLostFocus(object? sender, RoutedEventArgs e)
+    {
+        // 失焦视同取消：恢复原值
+        if (sender is TextBox box && _recordingBox == box)
+        {
+            box.Text = ReadHotkeyForBox(box);
+            _recordingBox = null;
+        }
+    }
+
     private void OnHotkeyKeyDown(object? sender, KeyEventArgs e)
     {
         if (_recordingBox is null || sender is not TextBox box)
@@ -186,6 +196,7 @@ public partial class SettingsWindow : Window
         {
             box.Text = ReadHotkeyForBox(box);
             _recordingBox = null;
+            this.Focus(); // 移除输入框焦点（失焦回调会再恢复一次原值，幂等）
             return;
         }
 
