@@ -194,7 +194,7 @@ public partial class SettingsWindow : Window
            )
             return;
 
-        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        var key = e.Key;
         var mods = e.KeyModifiers;
 
         var parts = new List<string>();
