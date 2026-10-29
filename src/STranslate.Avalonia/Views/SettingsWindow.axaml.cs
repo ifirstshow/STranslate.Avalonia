@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Layout;
@@ -158,6 +159,76 @@ public partial class SettingsWindow : Window
         WebDavUser.Text = b.Username;
         WebDavPass.Text = b.Password;
     }
+
+    // ── 热键录制（点击框 → 按组合键 → 自动写入并应用）──
+
+    private TextBox? _recordingBox;
+
+    private void OnHotkeyGotFocus(object? sender, FocusChangedEventArgs e)
+    {
+        if (sender is TextBox box)
+        {
+            _recordingBox = box;
+            box.Text = "按下组合键…（Esc 取消）";
+        }
+    }
+
+    private void OnHotkeyKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (_recordingBox is null || sender is not TextBox box)
+            return;
+
+        e.Handled = true;
+
+        // Esc 取消：恢复原值
+        if (e.Key == Key.Escape)
+        {
+            box.Text = ReadHotkeyForBox(box);
+            _recordingBox = null;
+            return;
+        }
+
+        // 修饰键单独按下不算完成
+        if (e.Key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt
+            or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin
+            or Key.LeftSuper or Key.RightSuper)
+            return;
+
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        var mods = e.KeyModifiers;
+
+        var parts = new List<string>();
+        if (mods.HasFlag(KeyModifiers.Control)) parts.Add("Ctrl");
+        if (mods.HasFlag(KeyModifiers.Alt)) parts.Add("Alt");
+        if (mods.HasFlag(KeyModifiers.Shift)) parts.Add("Shift");
+        if (mods.HasFlag(KeyModifiers.Meta)) parts.Add("Win");
+
+        // 纯主键（无修饰）仅接受 F1-F24，避免劫持普通输入
+        if (parts.Count == 0 && !(key is Key.F1 or Key.F2 or Key.F3 or Key.F4 or Key.F5 or Key.F6
+            or Key.F7 or Key.F8 or Key.F9 or Key.F10 or Key.F11 or Key.F12
+            or Key.F13 or Key.F14 or Key.F15 or Key.F16 or Key.F17 or Key.F18
+            or Key.F19 or Key.F20 or Key.F21 or Key.F22 or Key.F23 or Key.F24))
+            return;
+
+        parts.Add(key.ToString());
+        box.Text = HotkeyCodec.Normalize(string.Join('+', parts));
+        _recordingBox = null;
+
+        // 录制完自动应用（对齐原版即录即生效）
+        OnSaveHotkeys(sender, new RoutedEventArgs());
+    }
+
+    private string ReadHotkeyForBox(TextBox box) => box.Name switch
+    {
+        var n when n == HkOpenWindow.Name => AppSettings.Current.Hotkeys.OpenWindow,
+        var n when n == HkInputTranslate.Name => AppSettings.Current.Hotkeys.InputTranslate,
+        var n when n == HkCrosswordTranslate.Name => AppSettings.Current.Hotkeys.CrosswordTranslate,
+        var n when n == HkScreenshotTranslate.Name => AppSettings.Current.Hotkeys.ScreenshotTranslate,
+        var n when n == HkSilentOcr.Name => AppSettings.Current.Hotkeys.SilentOcr,
+        var n when n == HkSilentTts.Name => AppSettings.Current.Hotkeys.SilentTts,
+        var n when n == HkImageTranslate.Name => AppSettings.Current.Hotkeys.ImageTranslate,
+        _ => string.Empty
+    };
 
     private void OnSaveIncrementalKey()
     {

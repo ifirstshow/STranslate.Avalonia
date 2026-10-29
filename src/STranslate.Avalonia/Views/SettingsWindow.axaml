@@ -94,31 +94,31 @@
                     <TextBlock Text="格式：修饰键 Ctrl/Alt/Shift/Win + 主键，如 Alt+G、Ctrl+Shift+X。支持 A-Z、0-9、F1-F24。" Opacity="0.6" TextWrapping="Wrap" />
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBlock Grid.Column="0" Text="开关主窗口" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="1" Width="180" x:Name="HkOpenWindow" Text="{Binding OpenWindow}" />
+                        <TextBox Grid.Column="1" Width="180" x:Name="HkOpenWindow" IsReadOnly="True" GotFocus="OnHotkeyGotFocus" KeyDown="OnHotkeyKeyDown" />
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBlock Grid.Column="0" Text="输入翻译" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="1" Width="180" x:Name="HkInputTranslate" Text="{Binding InputTranslate}" />
+                        <TextBox Grid.Column="1" Width="180" x:Name="HkInputTranslate" IsReadOnly="True" GotFocus="OnHotkeyGotFocus" KeyDown="OnHotkeyKeyDown" />
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBlock Grid.Column="0" Text="划词翻译" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="1" Width="180" x:Name="HkCrosswordTranslate" Text="{Binding CrosswordTranslate}" />
+                        <TextBox Grid.Column="1" Width="180" x:Name="HkCrosswordTranslate" IsReadOnly="True" GotFocus="OnHotkeyGotFocus" KeyDown="OnHotkeyKeyDown" />
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBlock Grid.Column="0" Text="截图翻译" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="1" Width="180" x:Name="HkScreenshotTranslate" Text="{Binding ScreenshotTranslate}" />
+                        <TextBox Grid.Column="1" Width="180" x:Name="HkScreenshotTranslate" IsReadOnly="True" GotFocus="OnHotkeyGotFocus" KeyDown="OnHotkeyKeyDown" />
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBlock Grid.Column="0" Text="静默 OCR" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="1" Width="180" x:Name="HkSilentOcr" Text="{Binding SilentOcr}" />
+                        <TextBox Grid.Column="1" Width="180" x:Name="HkSilentOcr" IsReadOnly="True" GotFocus="OnHotkeyGotFocus" KeyDown="OnHotkeyKeyDown" />
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBlock Grid.Column="0" Text="图片翻译" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="1" Width="180" x:Name="HkImageTranslate" Text="{Binding ImageTranslate}" />
+                        <TextBox Grid.Column="1" Width="180" x:Name="HkImageTranslate" IsReadOnly="True" GotFocus="OnHotkeyGotFocus" KeyDown="OnHotkeyKeyDown" />
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBlock Grid.Column="0" Text="静默 TTS" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="1" Width="180" x:Name="HkSilentTts" Text="{Binding SilentTts}" />
+                        <TextBox Grid.Column="1" Width="180" x:Name="HkSilentTts" IsReadOnly="True" GotFocus="OnHotkeyGotFocus" KeyDown="OnHotkeyKeyDown" />
                     </Grid>
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                             <TextBlock Grid.Column="0" Text="增量翻译键" VerticalAlignment="Center" />
