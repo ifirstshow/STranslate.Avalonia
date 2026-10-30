@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using Avalonia.Interactivity;
@@ -317,14 +318,22 @@ public partial class SettingsWindow : Window
 
     private void SaveProxyFromUi()
     {
-        var proxy = AppSettings.Current.Proxy;
-        proxy.IsEnabled = ProxyEnabledCheck.IsChecked == true;
-        proxy.ProxyType = ProxyTypeCombo.SelectedIndex == 1 ? ProxyType.Socks5 : ProxyType.Http;
-        proxy.ProxyAddress = ProxyAddress.Text.Trim();
-        _ = int.TryParse(ProxyPort.Text.Trim(), out var port);
-        proxy.ProxyPort = port;
-        AppSettings.Current.Save();
-        App.Services.GetRequiredService<HttpService>().ReloadProxy();
+        try
+        {
+            var proxy = AppSettings.Current.Proxy ??= new ProxySettings();
+            proxy.IsEnabled = ProxyEnabledCheck.IsChecked == true;
+            proxy.ProxyType = ProxyTypeCombo.SelectedIndex == 1 ? ProxyType.Socks5 : ProxyType.Http;
+            proxy.ProxyAddress = string.IsNullOrWhiteSpace(ProxyAddress.Text) ? "127.0.0.1" : ProxyAddress.Text.Trim();
+            if (!int.TryParse(ProxyPort.Text.Trim(), out var port))
+                port = 10808;
+            proxy.ProxyPort = port;
+            AppSettings.Current.Save();
+            App.Services.GetRequiredService<HttpService>().ReloadProxy();
+        }
+        catch (Exception ex)
+        {
+            ProxyStatusText.Text = "代理应用失败：" + ex.Message;
+        }
     }
 
     private async void OnTestProxyClick(object? sender, RoutedEventArgs e)
@@ -662,10 +671,16 @@ public partial class SettingsWindow : Window
             prompts[0].IsEnabled = true;
 
         var root = new StackPanel { Spacing = 8 };
+        var loading = true;   // 初始填充期间抑制 SelectionChanged 的保存（避免空框清掉数据）
 
         // 条目选择（启用单选）
-        var listBox = new ListBox { MinHeight = 72, MaxHeight = 150 };
-        listBox.ItemsSource = prompts;
+        var listBox = new ListBox
+        {
+            MinHeight = 72,
+            MaxHeight = 150,
+            ItemTemplate = new FuncDataTemplate<Prompt>((p, _) =>
+                new TextBlock { Text = p?.Name, Margin = new Thickness(4, 2) }),
+        };
         listBox.SelectedIndex = prompts.FindIndex(p => p.IsEnabled);
 
         var nameBox = new TextBox { Watermark = "名称" };
@@ -684,6 +699,7 @@ public partial class SettingsWindow : Window
             }
         }
         SyncFromSelection();
+        loading = false;
 
         void SaveAll()
         {
@@ -695,6 +711,8 @@ public partial class SettingsWindow : Window
 
         listBox.SelectionChanged += (_, _) =>
         {
+            if (loading)
+                return;
             // 切换前保存当前编辑内容
             SaveAll();
             if (listBox.SelectedItem is Prompt p)
