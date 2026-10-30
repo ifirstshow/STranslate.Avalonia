@@ -363,6 +363,12 @@ public partial class SettingsWindow : Window
         public string url { get; set; } = "";
     }
 
+    /// <summary>索引文件顶层结构（docs/plugin-market.json）。</summary>
+    private sealed class MarketIndex
+    {
+        public List<MarketPlugin> plugins { get; set; } = [];
+    }
+
     private async void OnRefreshMarketClick(object? sender, RoutedEventArgs e)
     {
         MarketStatusText.Text = "拉取市场索引…";
@@ -370,8 +376,8 @@ public partial class SettingsWindow : Window
         {
             var http = App.Services.GetRequiredService<HttpService>();
             var json = await http.GetAsync(MarketIndexUrl, (STranslate.Sdk.Options?)null);
-            _marketEntries = System.Text.Json.JsonSerializer.Deserialize<List<MarketPlugin>>(json,
-                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            _marketEntries = System.Text.Json.JsonSerializer.Deserialize<MarketIndex>(json,
+                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })?.plugins;
             MarketList.ItemsSource = (_marketEntries ?? [])
                 .Select(m => $"{m.name}  v{m.version}  —  {m.description}")
                 .ToList();
