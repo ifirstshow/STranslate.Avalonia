@@ -174,7 +174,7 @@ public partial class SettingsWindow : Window
         }
     }
 
-    private void OnHotkeyLostFocus(object? sender, RoutedEventArgs e)
+    private void OnHotkeyLostFocus(object? sender, FocusChangedEventArgs e)
     {
         // 失焦视同取消：恢复原值
         if (sender is TextBox box && _recordingBox == box)
@@ -196,7 +196,8 @@ public partial class SettingsWindow : Window
         {
             box.Text = ReadHotkeyForBox(box);
             _recordingBox = null;
-            this.Focus(); // 移除输入框焦点（失焦回调会再恢复一次原值，幂等）
+            // 焦点移到中性控件（失焦回调再触发一次恢复，幂等）
+            ServiceCardsPanel.Focus();
             return;
         }
 
