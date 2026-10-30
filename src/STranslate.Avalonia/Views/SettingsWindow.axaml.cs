@@ -667,9 +667,11 @@ public partial class SettingsWindow : Window
         var list = current.ValueKind == JsonValueKind.Object
             ? JsonSerializer.Deserialize<PromptList>(current.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
             : null;
-        var prompts = list?.Prompts is { Count: > 0 } ps ? ps : new List<Prompt>(setting.Default ?? []);
-        // 兼容旧 bug 清空过的数据：全部为空时回退默认
-        if (prompts.All(p => string.IsNullOrWhiteSpace(p.Name) && string.IsNullOrWhiteSpace(p.Content)))
+        var prompts = list?.Prompts is { Count: > 0 } ps
+            ? ps.Where(p => !string.IsNullOrWhiteSpace(p.Name) || !string.IsNullOrWhiteSpace(p.Content)).ToList()
+            : [];
+        // 旧 bug 清空过的空白记录直接过滤；过滤后无有效条目则回退默认
+        if (prompts.Count == 0)
             prompts = new List<Prompt>(setting.Default ?? []);
         if (prompts.Count > 0 && prompts.All(p => !p.IsEnabled))
             prompts[0].IsEnabled = true;
