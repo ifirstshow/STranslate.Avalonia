@@ -1,0 +1,10 @@
+{
+  "plugins": [
+    {
+      "name": "HelloWorker（示例）",
+      "description": "社区插件开发模板：输入任意文本返回 [worker] 前缀结果，用于验证 .spkg 安装链路",
+      "version": "0.1.0",
+      "url": ""
+    }
+  ]
+}

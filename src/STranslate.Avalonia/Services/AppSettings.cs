@@ -55,6 +55,14 @@ public sealed class AppSettings
     public bool AutoTranslate { get; set; }
     public string Theme { get; set; } = "Default";
 
+    /// <summary>图片翻译词块合并模式：smart=智能行合并；strict=逐块直翻。</summary>
+    public string ImageTranslateMergeMode { get; set; } = "smart";
+
+    /// <summary>主窗位置与宽度记忆（Height 由内容自适应）。</summary>
+    public int MainWindowLeft { get; set; } = -1;
+    public int MainWindowTop { get; set; } = -1;
+    public double MainWindowWidth { get; set; } = 520;
+
     // ── 系统 ──
     public bool AutoStart { get; set; }
 
@@ -99,6 +107,9 @@ public sealed class AppSettings
             cur.IsTopmost = fresh.IsTopmost;
             cur.AutoTranslate = fresh.AutoTranslate;
             cur.Theme = fresh.Theme;
+            cur.MainWindowLeft = fresh.MainWindowLeft;
+            cur.MainWindowTop = fresh.MainWindowTop;
+            cur.MainWindowWidth = fresh.MainWindowWidth;
             cur.AutoStart = fresh.AutoStart;
             cur.OcrServiceId = fresh.OcrServiceId;
             cur.TranslateServiceId = fresh.TranslateServiceId;

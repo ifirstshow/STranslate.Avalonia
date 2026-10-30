@@ -35,6 +35,7 @@ public partial class SettingsWindow : Window
         InitCombos();
         ReloadSpkgList();
         InitNetworkPage();
+        MergeModeCombo.SelectedIndex = AppSettings.Current.ImageTranslateMergeMode == "strict" ? 1 : 0;
         RefreshAllFromVm();
         // 录制态下点击不可聚焦区域（Avalonia 中焦点不会移动 → LostFocus 不触发），
         // 用窗口级 Tunnel 指针监听兜底取消
@@ -163,6 +164,14 @@ public partial class SettingsWindow : Window
         WebDavAddress.Text = b.Address;
         WebDavUser.Text = b.Username;
         WebDavPass.Text = b.Password;
+    }
+
+    private void OnMergeModeChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (MergeModeCombo is null)
+            return;
+        AppSettings.Current.ImageTranslateMergeMode = MergeModeCombo.SelectedIndex == 1 ? "strict" : "smart";
+        AppSettings.Current.Save();
     }
 
     // ── 热键录制（点击框 → 按组合键 → 自动写入并应用）──
@@ -294,16 +303,23 @@ public partial class SettingsWindow : Window
             App.Services.GetRequiredService<HttpService>().ReloadProxy();
             ProxyStatusText.Text = "已生效";
         };
-        ProxyTypeCombo.SelectedIndex = 0; // v1 仅自定义 HTTP 代理
+        ProxyTypeCombo.SelectedIndex = proxy.ProxyType == ProxyType.Socks5 ? 1 : 0;
         ProxyAddress.Text = proxy.ProxyAddress;
         ProxyPort.Text = proxy.ProxyPort.ToString();
+    }
+
+    private void OnProxyTypeChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (ProxyStatusText is null)
+            return;
+        SaveProxyFromUi();
     }
 
     private void SaveProxyFromUi()
     {
         var proxy = AppSettings.Current.Proxy;
         proxy.IsEnabled = ProxyEnabledCheck.IsChecked == true;
-        proxy.ProxyType = ProxyType.Http;
+        proxy.ProxyType = ProxyTypeCombo.SelectedIndex == 1 ? ProxyType.Socks5 : ProxyType.Http;
         proxy.ProxyAddress = ProxyAddress.Text.Trim();
         _ = int.TryParse(ProxyPort.Text.Trim(), out var port);
         proxy.ProxyPort = port;
@@ -323,6 +339,75 @@ public partial class SettingsWindow : Window
     // ── 社区插件（.spkg，ADR-0004 worker 加载）──
 
     private readonly PluginPackageManager _spkgManager = new();
+
+    private const string MarketIndexUrl =
+        "https://raw.githubusercontent.com/ifirstshow/STranslate.Avalonia/main/docs/plugin-market.json";
+
+    private List<MarketPlugin>? _marketEntries;
+
+    private sealed class MarketPlugin
+    {
+        public string name { get; set; } = "";
+        public string description { get; set; } = "";
+        public string version { get; set; } = "";
+        public string url { get; set; } = "";
+    }
+
+    private async void OnRefreshMarketClick(object? sender, RoutedEventArgs e)
+    {
+        MarketStatusText.Text = "拉取市场索引…";
+        try
+        {
+            var http = App.Services.GetRequiredService<HttpService>();
+            var json = await http.GetAsync(MarketIndexUrl, (STranslate.Sdk.Options?)null);
+            _marketEntries = System.Text.Json.JsonSerializer.Deserialize<List<MarketPlugin>>(json,
+                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            MarketList.ItemsSource = (_marketEntries ?? [])
+                .Select(m => $"{m.name}  v{m.version}  —  {m.description}")
+                .ToList();
+            MarketStatusText.Text = $"共 {_marketEntries?.Count ?? 0} 个插件";
+        }
+        catch (Exception ex)
+        {
+            MarketStatusText.Text = "索引拉取失败：" + ex.Message;
+        }
+    }
+
+    private async void OnInstallFromMarketClick(object? sender, RoutedEventArgs e)
+    {
+        var idx = MarketList.SelectedIndex;
+        if (_marketEntries is null || idx < 0 || idx >= _marketEntries.Count)
+        {
+            MarketStatusText.Text = "先在列表中选择要安装的插件。";
+            return;
+        }
+        var entry = _marketEntries[idx];
+        if (string.IsNullOrEmpty(entry.url))
+        {
+            MarketStatusText.Text = "该条目暂无下载地址。";
+            return;
+        }
+
+        MarketStatusText.Text = "下载中…";
+        try
+        {
+            using var http = new System.Net.Http.HttpClient();
+            var bytes = await http.GetByteArrayAsync(entry.url);
+            var tmp = Path.Combine(Path.GetTempPath(), $"market-{Guid.NewGuid():N}.spkg");
+            await File.WriteAllBytesAsync(tmp, bytes);
+            var error = _spkgManager.Install(tmp);
+            File.Delete(tmp);
+            MarketStatusText.Text = error is null
+                ? $"已安装 {entry.name}，重启程序后生效。"
+                : "安装失败：" + error;
+            ReloadSpkgList();
+        }
+        catch (Exception ex)
+        {
+            MarketStatusText.Text = "下载失败：" + ex.Message;
+        }
+    }
+
 
     private void ReloadSpkgList()
     {
@@ -348,6 +433,7 @@ public partial class SettingsWindow : Window
             : "安装失败：" + error;
         ReloadSpkgList();
         InitNetworkPage();
+        MergeModeCombo.SelectedIndex = AppSettings.Current.ImageTranslateMergeMode == "strict" ? 1 : 0;
     }
 
     private void OnUninstallSpkgClick(object? sender, RoutedEventArgs e)
@@ -367,6 +453,7 @@ public partial class SettingsWindow : Window
             : "卸载失败：" + error;
         ReloadSpkgList();
         InitNetworkPage();
+        MergeModeCombo.SelectedIndex = AppSettings.Current.ImageTranslateMergeMode == "strict" ? 1 : 0;
     }
 
     // ── 配置备份：导出/导入 settings.json + extension-settings.json + history.db ──
@@ -563,6 +650,100 @@ public partial class SettingsWindow : Window
         return card;
     }
 
+    /// <summary>Prompt 列表编辑器：启用单选 + 名称 + 内容，增删条目（对齐原版 PromptEditWindow 精简版）。</summary>
+    private Control BuildPromptEditor(string extensionId, string itemId, JsonElement current, PromptListSetting setting)
+    {
+        // 数据：当前值或默认值
+        var list = current.ValueKind == JsonValueKind.Object
+            ? JsonSerializer.Deserialize<PromptList>(current.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+            : null;
+        var prompts = list?.Prompts is { Count: > 0 } ps ? ps : new List<Prompt>(setting.Default ?? []);
+        if (prompts.Count > 0 && prompts.All(p => !p.IsEnabled))
+            prompts[0].IsEnabled = true;
+
+        var root = new StackPanel { Spacing = 8 };
+
+        // 条目选择（启用单选）
+        var listBox = new ListBox { MinHeight = 72, MaxHeight = 150 };
+        listBox.ItemsSource = prompts;
+        listBox.SelectedIndex = prompts.FindIndex(p => p.IsEnabled);
+
+        var nameBox = new TextBox { Watermark = "名称" };
+        var contentBox = new TextBox { Watermark = "Prompt 内容", MinHeight = 80, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
+
+        void SyncFromSelection()
+        {
+            if (listBox.SelectedItem is Prompt p)
+            {
+                nameBox.Text = p.Name;
+                contentBox.Text = p.Content;
+            }
+            else
+            {
+                nameBox.Text = contentBox.Text = string.Empty;
+            }
+        }
+        SyncFromSelection();
+
+        void SaveAll()
+        {
+            prompts[listBox.SelectedIndex < 0 ? 0 : listBox.SelectedIndex].Name = nameBox.Text;
+            prompts[listBox.SelectedIndex < 0 ? 0 : listBox.SelectedIndex].Content = contentBox.Text;
+            _settingsStore.Update(extensionId, itemId,
+                JsonSerializer.SerializeToElement(new PromptList { Prompts = prompts }));
+        }
+
+        listBox.SelectionChanged += (_, _) =>
+        {
+            // 切换前保存当前编辑内容
+            SaveAll();
+            if (listBox.SelectedItem is Prompt p)
+                p.IsEnabled = true;
+            foreach (var other in prompts.Where(p => !ReferenceEquals(p, listBox.SelectedItem)))
+                other.IsEnabled = false;
+            SaveAll();
+            SyncFromSelection();
+        };
+        nameBox.LostFocus += (_, _) => SaveAll();
+        contentBox.LostFocus += (_, _) => SaveAll();
+
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        var addBtn = new Button { Content = "添加" };
+        var delBtn = new Button { Content = "删除" };
+        buttons.Children.Add(addBtn);
+        buttons.Children.Add(delBtn);
+
+        addBtn.Click += (_, _) =>
+        {
+            SaveAll();
+            var np = new Prompt { Name = $"Prompt {prompts.Count + 1}", Content = string.Empty };
+            prompts.Add(np);
+            listBox.ItemsSource = null;
+            listBox.ItemsSource = prompts;
+            listBox.SelectedItem = np;
+        };
+        delBtn.Click += (_, _) =>
+        {
+            if (listBox.SelectedItem is not Prompt p || prompts.Count <= 1)
+                return;
+            prompts.Remove(p);
+            if (prompts.Count > 0 && prompts.All(x => !x.IsEnabled))
+                prompts[0].IsEnabled = true;
+            listBox.ItemsSource = null;
+            listBox.ItemsSource = prompts;
+            listBox.SelectedIndex = prompts.FindIndex(x => x.IsEnabled);
+            SaveAll();
+        };
+
+        root.Children.Add(listBox);
+        root.Children.Add(nameBox);
+        root.Children.Add(contentBox);
+        root.Children.Add(buttons);
+        var hint = new TextBlock { Text = "单选启用；翻译请求使用启用中的 Prompt。", Opacity = 0.6, FontSize = 12 };
+        root.Children.Add(hint);
+        return root;
+    }
+
     private Control? BuildItemControl(string extensionId, SettingItem item)
     {
         var raw = _settingsStore.GetRaw(extensionId);
@@ -570,6 +751,9 @@ public partial class SettingsWindow : Window
 
         switch (item)
         {
+            case PromptListSetting pl:
+                return BuildPromptEditor(extensionId, item.Id, current, pl);
+
             case TextSetting t:
             {
                 var box = new TextBox

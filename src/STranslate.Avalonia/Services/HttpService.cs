@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Net;
 using STranslate.Core;
 using System.Net.Http.Headers;
@@ -37,6 +37,11 @@ public sealed class HttpService : IHttpService
         {
             var address = $"http://{proxy.ProxyAddress}:{proxy.ProxyPort}";
             handler.Proxy = new WebProxy(address);
+        }
+        else if (proxy.IsEnabled && proxy.ProxyType == ProxyType.Socks5)
+        {
+            // .NET 6+ SocketsHttpHandler 支持 socks5:// scheme
+            handler.Proxy = new WebProxy($"socks5://{proxy.ProxyAddress}:{proxy.ProxyPort}");
             if (!string.IsNullOrEmpty(proxy.ProxyUsername))
                 handler.Credentials = new NetworkCredential(proxy.ProxyUsername, proxy.ProxyPassword);
             if (!proxy.UseProxyForLocalAddresses)

@@ -21,6 +21,16 @@ public partial class MainWindow : Window
         DataContext = viewModel;
         Opened += (_, _) =>
         {
+            // 位置/宽度记忆（-1 = 首次，交给系统默认居中）
+            var s = AppSettings.Current;
+            if (s.MainWindowWidth >= MinWidth)
+                Width = s.MainWindowWidth;
+            if (s.MainWindowLeft >= 0 && s.MainWindowTop >= 0)
+                Position = new PixelPoint(s.MainWindowLeft, s.MainWindowTop);
+
+            PositionChanged += (_, __) => DebounceSaveLayout();
+            SizeChanged += (_, __) => DebounceSaveLayout();
+
             Topmost = viewModel.IsTopmost;
             ApplyTheme(viewModel.Theme);
             if (OperatingSystem.IsWindows())
@@ -60,6 +70,32 @@ public partial class MainWindow : Window
     }
 
     private bool _langComboSyncing = true;
+
+    private System.Threading.CancellationTokenSource? _layoutSaveCts;
+
+    /// <summary>位置/宽度防抖保存（拖动/缩放停止 800ms 后落盘）。</summary>
+    private void DebounceSaveLayout()
+    {
+        _layoutSaveCts?.Cancel();
+        _layoutSaveCts = new System.Threading.CancellationTokenSource();
+        var token = _layoutSaveCts.Token;
+        _ = System.Threading.Tasks.Task.Run(async () =>
+        {
+            try
+            {
+                await System.Threading.Tasks.Task.Delay(800, token);
+                global::Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    var s = AppSettings.Current;
+                    s.MainWindowLeft = Position.X;
+                    s.MainWindowTop = Position.Y;
+                    s.MainWindowWidth = Width;
+                    s.Save();
+                });
+            }
+            catch (OperationCanceledException) { }
+        });
+    }
 
     /// <summary>Combo 初始化（代码后台选择，绕开 ItemsSource 重置首项回写）。</summary>
     private void InitLangCombos()

@@ -528,22 +528,31 @@ public partial class MainViewModel : ObservableObject
             return null;
         }
 
-        // 同行贪心合并：垂直中心差 < 0.6×行高 → 同一行；行内按 X 排序拼接
+        // 合并模式（设置→通用）：smart=智能行合并（0.6 行高阈值）；strict=逐块直翻
+        var mergeMode = AppSettings.Current.ImageTranslateMergeMode;
         var lines = new List<List<(float X, float Y, float W, float H, string Text)>>();
-        foreach (var b in contents)
+        if (mergeMode == "strict")
         {
-            var cy = b.Y + b.H / 2.0;
-            var line = lines.FirstOrDefault(l =>
-            {
-                var ly = l.Min(x => x.Y);
-                var lh = l.Max(x => x.Y + x.H) - ly;
-                var lcy = ly + lh / 2.0;
-                return Math.Abs(cy - lcy) < Math.Max(b.H, lh) * 0.6;
-            });
-            if (line is null)
+            foreach (var b in contents)
                 lines.Add([b]);
-            else
-                line.Add(b);
+        }
+        else
+        {
+            foreach (var b in contents)
+            {
+                var cy = b.Y + b.H / 2.0;
+                var line = lines.FirstOrDefault(l =>
+                {
+                    var ly = l.Min(x => x.Y);
+                    var lh = l.Max(x => x.Y + x.H) - ly;
+                    var lcy = ly + lh / 2.0;
+                    return Math.Abs(cy - lcy) < Math.Max(b.H, lh) * 0.6;
+                });
+                if (line is null)
+                    lines.Add([b]);
+                else
+                    line.Add(b);
+            }
         }
 
         var scaling = shot.Scaling;

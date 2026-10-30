@@ -25,7 +25,13 @@
                             <Button Content="卸载" Click="OnUninstallSpkgClick" />
                         </StackPanel>
                         <ListBox x:Name="SpkgList" MinHeight="52" MaxHeight="120" />
-                        <TextBlock Text="社区插件由独立 worker 进程加载，安装/卸载后重启程序生效。" Opacity="0.6" FontSize="12" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="刷新在线市场" Click="OnRefreshMarketClick" />
+                            <Button Content="安装选中" Click="OnInstallFromMarketClick" />
+                            <TextBlock x:Name="MarketStatusText" VerticalAlignment="Center" Opacity="0.7" FontSize="12" />
+                        </StackPanel>
+                        <ListBox x:Name="MarketList" MinHeight="52" MaxHeight="120" />
+                        <TextBlock Text="社区插件由独立 worker 进程加载，安装/卸载后重启程序生效。索引来源：仓库 docs/plugin-market.json。" Opacity="0.6" FontSize="12" />
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
@@ -47,6 +53,14 @@
                     <CheckBox IsChecked="{Binding ClipboardMonitorEnabled}" Content="剪贴板监听常驻翻译" />
                     <CheckBox IsChecked="{Binding MouseSelectionIconEnabled}" Content="划词后显示悬浮图标（点击翻译）" />
                     <CheckBox IsChecked="{Binding AutoTranslate}" Content="自动翻译（输入后自动执行）" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="图片翻译合并" VerticalAlignment="Center" />
+                        <ComboBox Grid.Column="1" x:Name="MergeModeCombo" HorizontalAlignment="Stretch"
+                                  SelectedIndex="0" SelectionChanged="OnMergeModeChanged">
+                            <ComboBoxItem Content="智能行合并（默认）" />
+                            <ComboBoxItem Content="逐块直翻（不合并）" />
+                        </ComboBox>
+                    </Grid>
                     <TextBlock Text="以上设置即改即存。" Opacity="0.6" FontSize="12" />
                 </StackPanel>
             </ScrollViewer>
@@ -139,8 +153,10 @@
                     <StackPanel x:Name="ProxyCustomPanel" Spacing="10" IsVisible="False">
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
                             <TextBlock Grid.Column="0" Text="类型" VerticalAlignment="Center" />
-                            <ComboBox Grid.Column="1" x:Name="ProxyTypeCombo" HorizontalAlignment="Stretch">
-                                <ComboBoxItem Content="自定义" />
+                            <ComboBox Grid.Column="1" x:Name="ProxyTypeCombo" HorizontalAlignment="Stretch"
+                                      SelectedIndex="0" SelectionChanged="OnProxyTypeChanged">
+                                <ComboBoxItem Content="HTTP" />
+                                <ComboBoxItem Content="SOCKS5" />
                             </ComboBox>
                         </Grid>
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
