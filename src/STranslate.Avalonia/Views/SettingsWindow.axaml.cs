@@ -37,7 +37,7 @@ public partial class SettingsWindow : Window
         RefreshAllFromVm();
         // 录制态下点击不可聚焦区域（Avalonia 中焦点不会移动 → LostFocus 不触发），
         // 用窗口级 Tunnel 指针监听兜底取消
-        this.AddHandler(InputElement.PointerPressedEvent, OnWindowPointerPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        this.AddHandler(InputElement.PointerPressedEvent, OnWindowPointerPressed, global::Avalonia.Interactivity.RoutingStrategies.Tunnel);
         IncKeyBox.Text = _viewModel.IncrementalTranslateKey;
         var b = AppSettings.Current.Backup;
         WebDavAddress.Text = b.Address;
@@ -182,7 +182,7 @@ public partial class SettingsWindow : Window
         if (_recordingBox is null)
             return;
         // 点击录制框内部不取消
-        if (e.Source is Avalonia.Visual v)
+        if (e.Source is global::Avalonia.Visual v)
         {
             for (var cur = v; cur is not null; cur = cur.GetVisualParent())
                 if (ReferenceEquals(cur, _recordingBox))
