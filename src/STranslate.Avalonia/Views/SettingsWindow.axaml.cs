@@ -189,8 +189,11 @@ public partial class SettingsWindow : Window
                 if (ReferenceEquals(cur, _recordingBox))
                     return;
         }
-        _recordingBox.Text = ReadHotkeyForBox(_recordingBox);
+        var box = _recordingBox;
+        box.Text = ReadHotkeyForBox(box);
         _recordingBox = null;
+        // 焦点移到中性容器：否则框仍处于聚焦态，再次点击不会触发 GotFocus 重新进入录制
+        HotkeysPanel.Focus();
     }
 
     private void OnHotkeyLostFocus(object? sender, FocusChangedEventArgs e)
