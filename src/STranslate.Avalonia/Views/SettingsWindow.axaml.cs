@@ -332,6 +332,7 @@ public partial class SettingsWindow : Window
         }
         catch (Exception ex)
         {
+            Program.LogError("ProxySave", ex);
             ProxyStatusText.Text = "代理应用失败：" + ex.Message;
         }
     }

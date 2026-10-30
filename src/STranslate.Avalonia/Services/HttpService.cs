@@ -60,13 +60,11 @@ public sealed class HttpService : IHttpService
 
     private static HttpClient CreateClient() => new(CreateHandler()) { Timeout = Timeout.InfiniteTimeSpan };
 
-    /// <summary>代理设置变更后调用：重建全部客户端（含默认客户端）。</summary>
+    /// <summary>代理设置变更后调用：重建全部客户端（含默认客户端）。
+    /// 旧实例不显式 Dispose——进行中的请求挂在旧实例上，显式销毁会引发 ObjectDisposed/NRE。</summary>
     public void ReloadProxy()
     {
-        foreach (var kv in _namedClients)
-            kv.Value.Dispose();
         _namedClients.Clear();
-        _defaultClient.Dispose();
         _defaultClient = CreateClient();
     }
 
