@@ -35,6 +35,9 @@ public partial class SettingsWindow : Window
         ReloadSpkgList();
         InitNetworkPage();
         RefreshAllFromVm();
+        // 录制态下点击不可聚焦区域（Avalonia 中焦点不会移动 → LostFocus 不触发），
+        // 用窗口级 Tunnel 指针监听兜底取消
+        this.AddHandler(InputElement.PointerPressedEvent, OnWindowPointerPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         IncKeyBox.Text = _viewModel.IncrementalTranslateKey;
         var b = AppSettings.Current.Backup;
         WebDavAddress.Text = b.Address;
@@ -174,6 +177,21 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_recordingBox is null)
+            return;
+        // 点击录制框内部不取消
+        if (e.Source is Avalonia.Visual v)
+        {
+            for (var cur = v; cur is not null; cur = cur.GetVisualParent())
+                if (ReferenceEquals(cur, _recordingBox))
+                    return;
+        }
+        _recordingBox.Text = ReadHotkeyForBox(_recordingBox);
+        _recordingBox = null;
+    }
+
     private void OnHotkeyLostFocus(object? sender, FocusChangedEventArgs e)
     {
         // 失焦视同取消：恢复原值
@@ -196,8 +214,8 @@ public partial class SettingsWindow : Window
         {
             box.Text = ReadHotkeyForBox(box);
             _recordingBox = null;
-            // 焦点移到中性控件（失焦回调再触发一次恢复，幂等）
-            ServiceCardsPanel.Focus();
+            // 焦点移到中性容器（StackPanel 已设 Focusable）
+            HotkeysPanel.Focus();
             return;
         }
 

@@ -90,7 +90,7 @@
         </TabItem>
         <TabItem Header="热键">
             <ScrollViewer Margin="8">
-                <StackPanel x:Name="HotkeysPanel" Spacing="10">
+                <StackPanel x:Name="HotkeysPanel" Spacing="10" Focusable="True">
                     <TextBlock Text="格式：修饰键 Ctrl/Alt/Shift/Win + 主键，如 Alt+G、Ctrl+Shift+X。支持 A-Z、0-9、F1-F24。" Opacity="0.6" TextWrapping="Wrap" />
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBlock Grid.Column="0" Text="开关主窗口" VerticalAlignment="Center" />
