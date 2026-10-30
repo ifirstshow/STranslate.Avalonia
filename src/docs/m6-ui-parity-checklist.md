@@ -2,6 +2,8 @@
 
 > 2026-10-24 对照 WPF 原版（STranslate/Views + Controls 60 控件 + Pages 12 页）盘点。
 > 目标：界面形态与功能覆盖向原版靠拢。完成一项划掉一项（改 ✅ 并注明日期）。
+> **2026-10-30 收官**：M6a/b/c/d 四批次全部完成（余 ImageZoom 已并入 OCR 窗、分段精调为两档模式）。
+> 排障教训：**构建被运行中的程序锁住时产物不更新，"修复无效"的多次报告均为旧产物测试**——重启前务必确认构建成功。
 
 ## 一、主窗（原版 MainWindow.xaml 386 行：InputControl + OutputControl + HeaderControl）
 
