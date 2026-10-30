@@ -293,6 +293,10 @@ public partial class SettingsWindow : Window
 
     private void InitNetworkPage()
     {
+        STranslate.Avalonia.Services.DebugTrace.Log(
+            $"net: enabled={ProxyEnabledCheck is not null} panel={ProxyCustomPanel is not null} " +
+            $"type={ProxyTypeCombo is not null} addr={ProxyAddress is not null} " +
+            $"port={ProxyPort is not null} status={ProxyStatusText is not null}");
         var proxy = AppSettings.Current.Proxy;
         ProxyEnabledCheck.IsChecked = proxy.IsEnabled;
         ProxyCustomPanel.IsVisible = proxy.IsEnabled;
@@ -667,6 +671,8 @@ public partial class SettingsWindow : Window
         var list = current.ValueKind == JsonValueKind.Object
             ? JsonSerializer.Deserialize<PromptList>(current.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
             : null;
+        STranslate.Avalonia.Services.DebugTrace.Log(
+            $"prompt: currentKind={current.ValueKind} prompts={(list?.Prompts.Count.ToString() ?? "null")}");
         var prompts = list?.Prompts is { Count: > 0 } ps
             ? ps.Where(p => !string.IsNullOrWhiteSpace(p.Name) || !string.IsNullOrWhiteSpace(p.Content)).ToList()
             : [];
